@@ -40,7 +40,10 @@ export function UrlListItem({ item, index, onDelete, onEdit, isPlaying, onPlayPa
       const playPromise = audioRef.current.play();
       if (playPromise !== undefined) {
         playPromise
-          .then(() => console.log(`Successfully started playing ${item.title}`))
+          .then(() => {
+            console.log(`Successfully started playing ${item.title}`);
+            setIsLoading(false);
+          })
           .catch(error => {
             console.error(`Error playing ${item.title}:`, error);
             setIsLoading(false);
