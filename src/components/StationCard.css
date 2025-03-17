@@ -1,0 +1,71 @@
+.station-card {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+
+.station-info h3 {
+  margin: 0 0 0.5rem 0;
+  color: #333;
+}
+
+.station-info .url {
+  color: #666;
+  font-size: 0.9rem;
+  margin: 0 0 1rem 0;
+  word-break: break-all;
+}
+
+.controls {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.controls button {
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 4px;
+  background-color: #4CAF50;
+  color: white;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.controls button:hover {
+  background-color: #45a049;
+}
+
+.schedule-area {
+  display: flex;
+  gap: 4px;
+  margin-left: 1rem;
+  padding-left: 1rem;
+  border-left: 1px solid #eee;
+}
+
+.schedule-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.schedule-label {
+  font-size: 0.7rem;
+  color: #666;
+}
+
+.schedule-indicator {
+  width: 16px;
+  height: 16px;
+  border-radius: 3px;
+  background-color: #f0f0f0;
+  transition: background-color 0.2s;
+}
+
+.schedule-indicator.active {
+  background-color: #4CAF50;
+} 

@@ -155,6 +155,32 @@ export function UrlListItem({ item, index, onDelete, onEdit, isPlaying, onPlayPa
                   <DeleteIcon sx={{ fontSize: 16 }} />
                 </IconButton>
               </Tooltip>
+              <Box sx={{ 
+                display: 'flex', 
+                gap: 0.5, 
+                ml: 1, 
+                pl: 1, 
+                borderLeft: '1px solid',
+                borderColor: 'divider',
+                alignItems: 'center'
+              }}>
+                {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, index) => (
+                  <Box key={day} sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.5 }}>
+                    <Typography variant="caption" sx={{ fontSize: '0.7rem', color: 'text.secondary' }}>
+                      {day}
+                    </Typography>
+                    <Box
+                      sx={{
+                        width: 16,
+                        height: 16,
+                        borderRadius: 0.5,
+                        bgcolor: item.schedule?.some(s => s.day === index) ? 'primary.main' : 'action.hover',
+                        transition: 'background-color 0.2s'
+                      }}
+                    />
+                  </Box>
+                ))}
+              </Box>
             </Box>
           </CardContent>
         </Card>
