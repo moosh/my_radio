@@ -11,6 +11,59 @@ import { Station } from './types/Station';
 const darkTheme = createTheme({
   palette: {
     mode: 'dark',
+    background: {
+      default: '#121212',
+      paper: '#1E1E1E',
+    },
+    primary: {
+      main: '#90CAF9',
+    },
+    secondary: {
+      main: '#CE93D8',
+    },
+    error: {
+      main: '#EF5350',
+    },
+    text: {
+      primary: '#FFFFFF',
+      secondary: '#B0BEC5',
+    },
+  },
+  components: {
+    MuiCard: {
+      styleOverrides: {
+        root: {
+          backgroundColor: '#1E1E1E',
+          '&:hover': {
+            backgroundColor: '#2D2D2D',
+          },
+        },
+      },
+    },
+    MuiDialog: {
+      styleOverrides: {
+        paper: {
+          backgroundColor: '#1E1E1E',
+        },
+      },
+    },
+    MuiTextField: {
+      styleOverrides: {
+        root: {
+          '& .MuiOutlinedInput-root': {
+            '& fieldset': {
+              borderColor: '#424242',
+            },
+            '&:hover fieldset': {
+              borderColor: '#616161',
+            },
+            '&.Mui-focused fieldset': {
+              borderColor: '#90CAF9',
+            },
+          },
+        },
+      },
+    },
   },
 });
 
@@ -26,6 +79,7 @@ function App() {
   });
   const [debugMessages, setDebugMessages] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [currentlyPlayingId, setCurrentlyPlayingId] = useState<string | null>(null);
 
   const addDebugMessage = (message: string) => {
     console.log(message); // Also log to browser console
@@ -117,97 +171,109 @@ function App() {
     setItems(items.filter(item => item.id !== id));
   };
 
+  const handlePlayPause = (stationId: string) => {
+    setCurrentlyPlayingId(currentlyPlayingId === stationId ? null : stationId);
+  };
+
   return (
     <ThemeProvider theme={darkTheme}>
-      <Container maxWidth="md" sx={{ py: 4 }}>
-        <Box sx={{ mb: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Typography variant="h4" component="h1">
-            My Radio
-          </Typography>
-          <Button
-            variant="contained"
-            startIcon={<AddIcon />}
-            onClick={() => handleOpenDialog()}
-          >
-            Add Station
-          </Button>
-        </Box>
-
-        {error && (
-          <Box sx={{ mb: 2, p: 2, bgcolor: 'error.main', color: 'error.contrastText', borderRadius: 1 }}>
-            <Typography>Error: {error}</Typography>
-          </Box>
-        )}
-
-        <DragDropContext onDragEnd={handleDragEnd}>
-          <Droppable droppableId="stations">
-            {(provided) => (
-              <Box
-                {...provided.droppableProps}
-                ref={provided.innerRef}
-                sx={{ mb: 4 }}
-              >
-                {items.map((item, index) => (
-                  <UrlListItem
-                    key={item.id}
-                    item={item}
-                    index={index}
-                    onDelete={handleDelete}
-                    onEdit={handleOpenDialog}
-                  />
-                ))}
-                {provided.placeholder}
-              </Box>
-            )}
-          </Droppable>
-        </DragDropContext>
-
-        <Dialog open={openDialog} onClose={handleCloseDialog}>
-          <DialogTitle>
-            {editingItem ? 'Edit Station' : 'Add New Station'}
-          </DialogTitle>
-          <DialogContent>
-            <Box sx={{ pt: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
-              <TextField
-                label="Title"
-                value={formData.title}
-                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                fullWidth
-                required
-              />
-              <TextField
-                label="URL"
-                value={formData.url}
-                onChange={(e) => setFormData({ ...formData, url: e.target.value })}
-                fullWidth
-                required
-              />
-              <TextField
-                label="Description"
-                value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                fullWidth
-                multiline
-                rows={2}
-              />
-              <TextField
-                label="Tags (comma-separated)"
-                value={formData.tags}
-                onChange={(e) => setFormData({ ...formData, tags: e.target.value })}
-                fullWidth
-              />
-            </Box>
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={handleCloseDialog}>Cancel</Button>
-            <Button onClick={handleSubmit} variant="contained">
-              {editingItem ? 'Save' : 'Add'}
+      <Box sx={{ 
+        minHeight: '100vh',
+        bgcolor: 'background.default',
+        color: 'text.primary'
+      }}>
+        <Container maxWidth="md" sx={{ py: 4 }}>
+          <Box sx={{ mb: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Typography variant="h4" component="h1">
+              My Radio
+            </Typography>
+            <Button
+              variant="contained"
+              startIcon={<AddIcon />}
+              onClick={() => handleOpenDialog()}
+            >
+              Add Station
             </Button>
-          </DialogActions>
-        </Dialog>
+          </Box>
 
-        <DebugConsole messages={debugMessages} />
-      </Container>
+          {error && (
+            <Box sx={{ mb: 2, p: 2, bgcolor: 'error.main', color: 'error.contrastText', borderRadius: 1 }}>
+              <Typography>Error: {error}</Typography>
+            </Box>
+          )}
+
+          <DragDropContext onDragEnd={handleDragEnd}>
+            <Droppable droppableId="stations">
+              {(provided) => (
+                <Box
+                  {...provided.droppableProps}
+                  ref={provided.innerRef}
+                  sx={{ mb: 4 }}
+                >
+                  {items.map((item, index) => (
+                    <UrlListItem
+                      key={item.id}
+                      item={item}
+                      index={index}
+                      onDelete={handleDelete}
+                      onEdit={handleOpenDialog}
+                      isPlaying={currentlyPlayingId === item.id}
+                      onPlayPause={handlePlayPause}
+                    />
+                  ))}
+                  {provided.placeholder}
+                </Box>
+              )}
+            </Droppable>
+          </DragDropContext>
+
+          <Dialog open={openDialog} onClose={handleCloseDialog}>
+            <DialogTitle>
+              {editingItem ? 'Edit Station' : 'Add New Station'}
+            </DialogTitle>
+            <DialogContent>
+              <Box sx={{ pt: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
+                <TextField
+                  label="Title"
+                  value={formData.title}
+                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                  fullWidth
+                  required
+                />
+                <TextField
+                  label="URL"
+                  value={formData.url}
+                  onChange={(e) => setFormData({ ...formData, url: e.target.value })}
+                  fullWidth
+                  required
+                />
+                <TextField
+                  label="Description"
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  fullWidth
+                  multiline
+                  rows={2}
+                />
+                <TextField
+                  label="Tags (comma-separated)"
+                  value={formData.tags}
+                  onChange={(e) => setFormData({ ...formData, tags: e.target.value })}
+                  fullWidth
+                />
+              </Box>
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={handleCloseDialog}>Cancel</Button>
+              <Button onClick={handleSubmit} variant="contained">
+                {editingItem ? 'Save' : 'Add'}
+              </Button>
+            </DialogActions>
+          </Dialog>
+
+          <DebugConsole messages={debugMessages} />
+        </Container>
+      </Box>
     </ThemeProvider>
   );
 }

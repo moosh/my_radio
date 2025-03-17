@@ -1,18 +1,3 @@
-title: BBC Radio 1
-url: https://stream.live.vc.bbcmedia.co.uk/bbc_radio_one
-tags: music, pop, uk
-description: BBC Radio 1 - The best new music and entertainment
-
-title: NPR News
-url: https://npr-ice.streamguys1.com/live.mp3
-tags: news, talk, us
-description: NPR News - Latest news and stories
-
-title: Jazz24
-url: https://live.wostreaming.net/direct/ppm-jazz24aac-ibc1
-tags: jazz, music
-description: Jazz24 - 24/7 jazz music
-
 title: RFA
 url: https://s2.voscast.com:12579/stream
 tags: radio, freeform
