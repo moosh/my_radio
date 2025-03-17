@@ -79,7 +79,7 @@ export function parseStationsFile(content: string, log?: LogFunction): UrlItem[]
       
       // Get the URL from the Location column
       const url = values[locationIndex]?.trim();
-      if (!url || !url.startsWith('http')) {
+      if (!url || !(url.startsWith('http://') || url.startsWith('https://'))) {
         logger(`Line ${lineNumber}: Skipping invalid URL: "${url}"`, 'warning');
         return null;
       }
