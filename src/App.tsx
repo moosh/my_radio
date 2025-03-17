@@ -80,6 +80,20 @@ function App() {
   const [debugMessages, setDebugMessages] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [currentlyPlayingId, setCurrentlyPlayingId] = useState<string | null>(null);
+  const [showDebugConsole, setShowDebugConsole] = useState(false);
+
+  // Add keyboard shortcut for toggling debug console
+  useEffect(() => {
+    const handleKeyPress = (event: KeyboardEvent) => {
+      // Ctrl/Cmd + Shift + D to toggle debug console
+      if ((event.ctrlKey || event.metaKey) && event.shiftKey && event.key.toLowerCase() === 'd') {
+        setShowDebugConsole(prev => !prev);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyPress);
+    return () => window.removeEventListener('keydown', handleKeyPress);
+  }, []);
 
   const addDebugMessage = (message: string) => {
     console.log(message); // Also log to browser console
@@ -271,7 +285,7 @@ function App() {
             </DialogActions>
           </Dialog>
 
-          <DebugConsole messages={debugMessages} />
+          {showDebugConsole && <DebugConsole messages={debugMessages} />}
         </Container>
       </Box>
     </ThemeProvider>
