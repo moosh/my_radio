@@ -1,8 +1,8 @@
 import { Draggable } from 'react-beautiful-dnd';
-import { Card, CardContent, Typography, Box, IconButton } from '@mui/material';
+import { Card, CardContent, Typography, Box, IconButton, CircularProgress } from '@mui/material';
 import { Delete as DeleteIcon, Edit as EditIcon, DragIndicator as DragIndicatorIcon, PlayArrow as PlayIcon, Pause as PauseIcon } from '@mui/icons-material';
 import { Station } from '../types/Station';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 interface UrlListItemProps {
   item: Station;
@@ -15,46 +15,57 @@ interface UrlListItemProps {
 
 export function UrlListItem({ item, index, onDelete, onEdit, isPlaying, onPlayPause }: UrlListItemProps) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
+  // Handle play/pause and audio element lifecycle
   useEffect(() => {
-    console.log(`Audio state changed for ${item.title}: isPlaying=${isPlaying}`);
-    
-    if (!audioRef.current) {
-      console.log(`Creating new audio element for ${item.title}`);
-      audioRef.current = new Audio(item.url);
-      
-      // Add event listeners for debugging
-      audioRef.current.addEventListener('error', (e) => {
-        console.error(`Audio error for ${item.title}:`, e);
-      });
-      
-      audioRef.current.addEventListener('playing', () => {
-        console.log(`Audio started playing for ${item.title}`);
-      });
-      
-      audioRef.current.addEventListener('pause', () => {
-        console.log(`Audio paused for ${item.title}`);
-      });
-    }
-
     if (isPlaying) {
-      console.log(`Attempting to play ${item.title}`);
+      // Create audio element only when starting playback
+      if (!audioRef.current) {
+        console.log(`Creating new audio element for ${item.title}`);
+        audioRef.current = new Audio(item.url);
+        
+        // Add event listeners
+        audioRef.current.addEventListener('error', (e) => {
+          console.error(`Audio error for ${item.title}:`, e);
+          setIsLoading(false);
+        });
+        
+        audioRef.current.addEventListener('canplaythrough', () => {
+          console.log(`Audio ready to play for ${item.title}`);
+          setIsLoading(false);
+        });
+      }
+
+      // Start playback
+      console.log(`Starting playback for ${item.title}`);
+      setIsLoading(true);
       const playPromise = audioRef.current.play();
       if (playPromise !== undefined) {
         playPromise
           .then(() => console.log(`Successfully started playing ${item.title}`))
-          .catch(error => console.error(`Error playing ${item.title}:`, error));
+          .catch(error => {
+            console.error(`Error playing ${item.title}:`, error);
+            setIsLoading(false);
+          });
       }
     } else {
-      console.log(`Pausing ${item.title}`);
-      audioRef.current.pause();
-    }
-
-    return () => {
+      // Clean up audio element when stopping
       if (audioRef.current) {
-        console.log(`Cleaning up audio for ${item.title}`);
+        console.log(`Stopping and cleaning up audio for ${item.title}`);
         audioRef.current.pause();
         audioRef.current = null;
+        setIsLoading(false);
+      }
+    }
+
+    // Cleanup function
+    return () => {
+      if (audioRef.current) {
+        console.log(`Component unmounting, cleaning up audio for ${item.title}`);
+        audioRef.current.pause();
+        audioRef.current = null;
+        setIsLoading(false);
       }
     };
   }, [isPlaying, item.url, item.title]);
@@ -102,9 +113,27 @@ export function UrlListItem({ item, index, onDelete, onEdit, isPlaying, onPlayPa
             <IconButton 
               size="small" 
               onClick={handlePlayPause}
-              sx={{ color: isPlaying ? 'primary.main' : 'text.secondary' }}
+              disabled={isLoading}
+              sx={{ 
+                color: isPlaying ? 'primary.main' : 'text.secondary',
+                position: 'relative',
+                minWidth: 40,
+                height: 40
+              }}
             >
-              {isPlaying ? <PauseIcon /> : <PlayIcon />}
+              {isLoading ? (
+                <CircularProgress 
+                  size={24} 
+                  sx={{ 
+                    position: 'absolute',
+                    color: 'primary.main'
+                  }}
+                />
+              ) : isPlaying ? (
+                <PauseIcon />
+              ) : (
+                <PlayIcon />
+              )}
             </IconButton>
             <Box sx={{ display: 'flex', gap: 0.5 }}>
               <IconButton 
