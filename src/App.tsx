@@ -1,11 +1,42 @@
 import React, { useState, useEffect } from 'react';
 import { DragDropContext, Droppable } from 'react-beautiful-dnd';
-import { Container, Typography, Box, Button, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Alert } from '@mui/material';
+import { Container, Typography, Box, Button, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Alert, ThemeProvider, createTheme } from '@mui/material';
 import { Add as AddIcon } from '@mui/icons-material';
 import { UrlListItem } from './components/UrlListItem';
 import { UrlItem } from './types/UrlItem';
 import { parseStationsFile } from './utils/stationParser';
 import { DebugConsole } from './components/DebugConsole';
+
+// Create dark theme
+const darkTheme = createTheme({
+  palette: {
+    mode: 'dark',
+    background: {
+      default: '#121212',
+      paper: '#1e1e1e',
+    },
+    text: {
+      primary: '#fff',
+      secondary: '#b0b0b0',
+    },
+  },
+  components: {
+    MuiCard: {
+      styleOverrides: {
+        root: {
+          backgroundColor: '#1e1e1e',
+        },
+      },
+    },
+    MuiChip: {
+      styleOverrides: {
+        root: {
+          backgroundColor: '#2d2d2d',
+        },
+      },
+    },
+  },
+});
 
 interface DebugMessage {
   timestamp: Date;
@@ -137,100 +168,102 @@ function App() {
   };
 
   return (
-    <>
-      <Container maxWidth="md" sx={{ py: 4, mb: '220px' }}>
-        <Box display="flex" justifyContent="space-between" alignItems="center" mb={4}>
-          <Typography variant="h4" component="h1">
-            Radio Stations
-          </Typography>
-          <Button
-            variant="contained"
-            startIcon={<AddIcon />}
-            onClick={() => handleOpenDialog()}
-          >
-            Add Station
-          </Button>
-        </Box>
-
-        {error && (
-          <Alert severity="error" sx={{ mb: 2 }}>
-            {error}
-          </Alert>
-        )}
-
-        {items.length === 0 && !error && (
-          <Alert severity="info" sx={{ mb: 2 }}>
-            Loading stations...
-          </Alert>
-        )}
-
-        <DragDropContext onDragEnd={handleDragEnd}>
-          <Droppable droppableId="url-list">
-            {(provided) => (
-              <Box
-                ref={provided.innerRef}
-                {...provided.droppableProps}
-              >
-                {items.map((item, index) => (
-                  <UrlListItem
-                    key={item.id}
-                    item={item}
-                    index={index}
-                    onDelete={handleDelete}
-                    onEdit={handleOpenDialog}
-                  />
-                ))}
-                {provided.placeholder}
-              </Box>
-            )}
-          </Droppable>
-        </DragDropContext>
-
-        <Dialog open={openDialog} onClose={handleCloseDialog}>
-          <DialogTitle>{editingItem ? 'Edit Station' : 'Add New Station'}</DialogTitle>
-          <DialogContent>
-            <Box display="flex" flexDirection="column" gap={2} sx={{ mt: 2 }}>
-              <TextField
-                label="URL"
-                value={formData.url}
-                onChange={(e) => setFormData({ ...formData, url: e.target.value })}
-                fullWidth
-                required
-              />
-              <TextField
-                label="Title"
-                value={formData.title}
-                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                fullWidth
-                required
-              />
-              <TextField
-                label="Description"
-                value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                fullWidth
-                multiline
-                rows={3}
-              />
-              <TextField
-                label="Tags (comma-separated)"
-                value={formData.tags}
-                onChange={(e) => setFormData({ ...formData, tags: e.target.value })}
-                fullWidth
-                helperText="Enter tags separated by commas"
-              />
-            </Box>
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={handleCloseDialog}>Cancel</Button>
-            <Button onClick={handleSubmit} variant="contained">
-              {editingItem ? 'Save' : 'Add'}
+    <ThemeProvider theme={darkTheme}>
+      <Box sx={{ bgcolor: 'background.default', minHeight: '100vh' }}>
+        <Container maxWidth="md" sx={{ py: 4, mb: '220px' }}>
+          <Box display="flex" justifyContent="space-between" alignItems="center" mb={4}>
+            <Typography variant="h4" component="h1">
+              Radio Stations
+            </Typography>
+            <Button
+              variant="contained"
+              startIcon={<AddIcon />}
+              onClick={() => handleOpenDialog()}
+            >
+              Add Station
             </Button>
-          </DialogActions>
-        </Dialog>
-      </Container>
-      <DebugConsole messages={debugMessages} />
-    </>
+          </Box>
+
+          {error && (
+            <Alert severity="error" sx={{ mb: 2 }}>
+              {error}
+            </Alert>
+          )}
+
+          {items.length === 0 && !error && (
+            <Alert severity="info" sx={{ mb: 2 }}>
+              Loading stations...
+            </Alert>
+          )}
+
+          <DragDropContext onDragEnd={handleDragEnd}>
+            <Droppable droppableId="url-list">
+              {(provided) => (
+                <Box
+                  ref={provided.innerRef}
+                  {...provided.droppableProps}
+                >
+                  {items.map((item, index) => (
+                    <UrlListItem
+                      key={item.id}
+                      item={item}
+                      index={index}
+                      onDelete={handleDelete}
+                      onEdit={handleOpenDialog}
+                    />
+                  ))}
+                  {provided.placeholder}
+                </Box>
+              )}
+            </Droppable>
+          </DragDropContext>
+
+          <Dialog open={openDialog} onClose={handleCloseDialog}>
+            <DialogTitle>{editingItem ? 'Edit Station' : 'Add New Station'}</DialogTitle>
+            <DialogContent>
+              <Box display="flex" flexDirection="column" gap={2} sx={{ mt: 2 }}>
+                <TextField
+                  label="URL"
+                  value={formData.url}
+                  onChange={(e) => setFormData({ ...formData, url: e.target.value })}
+                  fullWidth
+                  required
+                />
+                <TextField
+                  label="Title"
+                  value={formData.title}
+                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                  fullWidth
+                  required
+                />
+                <TextField
+                  label="Description"
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  fullWidth
+                  multiline
+                  rows={3}
+                />
+                <TextField
+                  label="Tags (comma-separated)"
+                  value={formData.tags}
+                  onChange={(e) => setFormData({ ...formData, tags: e.target.value })}
+                  fullWidth
+                  helperText="Enter tags separated by commas"
+                />
+              </Box>
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={handleCloseDialog}>Cancel</Button>
+              <Button onClick={handleSubmit} variant="contained">
+                {editingItem ? 'Save' : 'Add'}
+              </Button>
+            </DialogActions>
+          </Dialog>
+        </Container>
+        <DebugConsole messages={debugMessages} />
+      </Box>
+    </ThemeProvider>
   );
 }
 
