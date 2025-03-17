@@ -18,29 +18,33 @@ export const UrlListItem: React.FC<UrlListItemProps> = ({ item, index, onDelete,
         <Card
           ref={provided.innerRef}
           {...provided.draggableProps}
-          sx={{ mb: 2, '&:hover': { boxShadow: 6 } }}
+          sx={{ mb: 1, '&:hover': { boxShadow: 6 } }}
         >
-          <CardContent>
-            <Box display="flex" justifyContent="space-between" alignItems="flex-start">
-              <Box flex={1}>
-                <Typography variant="h6" component="a" href={item.url} target="_blank" rel="noopener noreferrer">
-                  {item.title}
-                </Typography>
-                <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-                  {item.description}
-                </Typography>
-                <Box sx={{ mt: 1, display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-                  {item.tags.map((tag) => (
-                    <Chip key={tag} label={tag} size="small" />
-                  ))}
+          <CardContent sx={{ py: 1, px: 2 }}>
+            <Box display="flex" justifyContent="space-between" alignItems="center">
+              <Box flex={1} sx={{ mr: 2 }}>
+                <Box display="flex" alignItems="center" gap={1}>
+                  <Typography variant="subtitle1" component="a" href={item.url} target="_blank" rel="noopener noreferrer" sx={{ textDecoration: 'none' }}>
+                    {item.title}
+                  </Typography>
+                  <Box sx={{ display: 'flex', gap: 0.5 }}>
+                    {item.tags.map((tag) => (
+                      <Chip key={tag} label={tag} size="small" sx={{ height: 20 }} />
+                    ))}
+                  </Box>
                 </Box>
-                <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
-                  Added: {new Date(item.createdAt).toLocaleDateString()}
-                </Typography>
-                <Box sx={{ mt: 2, width: '100%' }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
+                  <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.75rem' }}>
+                    {item.description}
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.75rem' }}>
+                    • {new Date(item.createdAt).toLocaleDateString()}
+                  </Typography>
+                </Box>
+                <Box sx={{ mt: 0.5 }}>
                   <audio
                     controls
-                    style={{ width: '100%' }}
+                    style={{ width: '100%', height: '32px' }}
                     src={item.url}
                     preload="none"
                   >
