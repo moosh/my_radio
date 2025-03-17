@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { DragDropContext, Droppable } from 'react-beautiful-dnd';
+import { DragDropContext, Droppable, DropResult } from 'react-beautiful-dnd';
 import { Container, Typography, Box, Button, Dialog, DialogTitle, DialogContent, DialogActions, TextField, ThemeProvider, createTheme } from '@mui/material';
 import { Add as AddIcon } from '@mui/icons-material';
 import { UrlListItem } from './components/UrlListItem';
@@ -126,12 +126,13 @@ function App() {
     loadStations();
   }, []);
 
-  const handleDragEnd = (result: any) => {
+  const handleDragEnd = (result: DropResult) => {
     if (!result.destination) return;
 
+    const { source, destination } = result;
     const newItems = Array.from(items);
-    const [reorderedItem] = newItems.splice(result.source.index, 1);
-    newItems.splice(result.destination.index, 0, reorderedItem);
+    const [reorderedItem] = newItems.splice(source.index, 1);
+    newItems.splice(destination.index, 0, reorderedItem);
 
     setItems(newItems);
   };
