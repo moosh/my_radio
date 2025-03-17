@@ -1,7 +1,7 @@
 import React from 'react';
 import { Draggable } from 'react-beautiful-dnd';
 import { Card, CardContent, Typography, Chip, Box, IconButton } from '@mui/material';
-import { Delete as DeleteIcon, Edit as EditIcon } from '@mui/icons-material';
+import { Delete as DeleteIcon, Edit as EditIcon, DragIndicator as DragIndicatorIcon } from '@mui/icons-material';
 import { UrlItem } from '../types/UrlItem';
 
 interface UrlListItemProps {
@@ -18,7 +18,6 @@ export const UrlListItem: React.FC<UrlListItemProps> = ({ item, index, onDelete,
         <Card
           ref={provided.innerRef}
           {...provided.draggableProps}
-          {...provided.dragHandleProps}
           sx={{ mb: 2, '&:hover': { boxShadow: 6 } }}
         >
           <CardContent>
@@ -38,8 +37,21 @@ export const UrlListItem: React.FC<UrlListItemProps> = ({ item, index, onDelete,
                 <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
                   Added: {new Date(item.createdAt).toLocaleDateString()}
                 </Typography>
+                <Box sx={{ mt: 2, width: '100%' }}>
+                  <audio
+                    controls
+                    style={{ width: '100%' }}
+                    src={item.url}
+                    preload="none"
+                  >
+                    Your browser does not support the audio element.
+                  </audio>
+                </Box>
               </Box>
               <Box>
+                <IconButton size="small" {...provided.dragHandleProps}>
+                  <DragIndicatorIcon />
+                </IconButton>
                 <IconButton size="small" onClick={() => onEdit(item)}>
                   <EditIcon />
                 </IconButton>
