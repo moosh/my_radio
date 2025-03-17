@@ -1,100 +1,103 @@
-import { UrlItem } from '../types/UrlItem';
+import { Station } from '../types/Station';
 
-interface StationData {
-  id: string;
-  url: string;
-  title: string;
-  description: string;
-  tags: string[];
-  createdAt: Date;
+interface ParseOptions {
+  log?: (message: string) => void;
 }
 
-type LogFunction = (message: string, type?: 'info' | 'error' | 'warning') => void;
+const defaultLog = (message: string) => console.log(message);
 
-export function parseStationsFile(content: string, log?: LogFunction): UrlItem[] {
-  const defaultLog = (message: string, type?: 'info' | 'error' | 'warning') => console.log(message);
-  const logger = log || defaultLog;
+export async function parseStationsFile({ log = defaultLog }: ParseOptions = {}): Promise<Station[]> {
+  try {
+    log('Starting to parse stations file...');
+    
+    let data: string;
+    if (window.electron) {
+      log('Using Electron API to get stations data');
+      data = await window.electron.getStationsData();
+      log(`Received ${data.length} bytes of data from Electron`);
+    } else {
+      log('Using fetch to get stations data');
+      const response = await fetch('/stations.txt');
+      if (!response.ok) {
+        throw new Error(`Failed to fetch stations file: ${response.status} ${response.statusText}`);
+      }
+      data = await response.text();
+      log(`Received ${data.length} bytes of data from fetch`);
+    }
 
-  logger('Starting to parse stations file');
-  
-  // Log raw content length and preview
-  logger(`Raw content length: ${content.length} characters`);
-  logger(`Raw content preview: "${content.substring(0, 100)}..."`);
-  
-  // Check for different line endings in raw content
-  logger(`Contains \\r\\n: ${content.includes('\r\n')}`);
-  logger(`Contains \\n: ${content.includes('\n')}`);
-  logger(`Contains \\r: ${content.includes('\r')}`);
+    if (!data || data.trim().length === 0) {
+      log('No stations data found');
+      return [];
+    }
 
-  // Handle different line endings and split into lines
-  const normalizedContent = content.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
-  const lines = normalizedContent.split('\n').filter(line => line.trim());
-  
-  if (lines.length < 2) {
-    logger(`Error at line 23: File has insufficient lines: ${lines.length}`, 'error');
-    logger(`Error at line 24: Content preview: ${content.substring(0, 200)}...`);
+    const lines = data.split('\n').filter(line => line.trim());
+    log(`Found ${lines.length} non-empty lines in file`);
+
+    const stations: Station[] = [];
+    let currentStation: Partial<Station> = {};
+
+    for (const line of lines) {
+      if (line.startsWith('#')) {
+        // Comment line, skip
+        continue;
+      }
+
+      if (line.trim() === '') {
+        // Empty line, process current station if complete
+        if (currentStation.title && currentStation.url) {
+          stations.push({
+            ...currentStation,
+            id: crypto.randomUUID(),
+            createdAt: new Date()
+          } as Station);
+          currentStation = {};
+        }
+        continue;
+      }
+
+      const [key, ...values] = line.split(':').map(s => s.trim());
+      const value = values.join(':').trim();
+
+      switch (key.toLowerCase()) {
+        case 'title':
+          // If we already have a complete station, save it before starting a new one
+          if (currentStation.title && currentStation.url) {
+            stations.push({
+              ...currentStation,
+              id: crypto.randomUUID(),
+              createdAt: new Date()
+            } as Station);
+            currentStation = {};
+          }
+          currentStation.title = value;
+          break;
+        case 'url':
+          currentStation.url = value;
+          break;
+        case 'tags':
+          currentStation.tags = value.split(',').map(tag => tag.trim()).filter(Boolean);
+          break;
+        case 'description':
+          currentStation.description = value;
+          break;
+        default:
+          log(`Unknown key in stations file: ${key}`);
+      }
+    }
+
+    // Add the last station if it exists
+    if (currentStation.title && currentStation.url) {
+      stations.push({
+        ...currentStation,
+        id: crypto.randomUUID(),
+        createdAt: new Date()
+      } as Station);
+    }
+
+    log(`Successfully parsed ${stations.length} stations`);
+    return stations;
+  } catch (error) {
+    log(`Error parsing stations file: ${error instanceof Error ? error.message : String(error)}`);
     return [];
   }
-
-  logger(`Line 28: Found ${lines.length} lines in file`);
-  
-  // Parse headers - log the raw first line for debugging
-  const headerLine = lines[0];
-  logger(`Line 32: Raw header line (${headerLine.length} chars): "${headerLine}"`);
-  
-  const headers = headerLine.split('\t');
-  logger(`Line 35: Found ${headers.length} columns`);
-  logger(`Line 36: Headers (${headers.length} total):`);
-  headers.forEach((header, index) => {
-    logger(`Line 38:   ${index}: "${header}"`);
-  });
-
-  // Find column indices
-  const nameIndex = 0; // First column is Name
-  const bitRateIndex = 19; // Bit Rate is the 20th column
-  const sampleRateIndex = 20; // Sample Rate is the 21st column
-  const locationIndex = 30; // Location is the last column
-
-  logger(`Line 46: Using fixed column indices - Name: ${nameIndex}, Bit Rate: ${bitRateIndex}, Sample Rate: ${sampleRateIndex}, Location: ${locationIndex}`);
-
-  return lines
-    .slice(1) // Skip header row
-    .filter((line, idx) => {
-      const shouldKeep = line.trim() && !line.startsWith('Name\t');
-      if (!shouldKeep) {
-        logger(`Line ${idx + 2}: Skipping line: "${line.substring(0, 50)}..."`, 'warning');
-      }
-      return shouldKeep;
-    })
-    .map((line, idx) => {
-      const values = line.split('\t');
-      const lineNumber = idx + 2; // Add 2 to account for 0-based index and header row
-      
-      // Log the raw values for debugging
-      logger(`Line ${lineNumber}: Processing line with ${values.length} columns:`);
-      logger(`Line ${lineNumber}:   Name: "${values[nameIndex]}"`);
-      logger(`Line ${lineNumber}:   Bit Rate: "${values[bitRateIndex]}"`);
-      logger(`Line ${lineNumber}:   Sample Rate: "${values[sampleRateIndex]}"`);
-      logger(`Line ${lineNumber}:   Location: "${values[locationIndex]}"`);
-      
-      // Get the URL from the Location column
-      const url = values[locationIndex]?.trim();
-      if (!url || !(url.startsWith('http://') || url.startsWith('https://'))) {
-        logger(`Line ${lineNumber}: Skipping invalid URL: "${url}"`, 'warning');
-        return null;
-      }
-
-      const station: StationData = {
-        id: crypto.randomUUID(),
-        url,
-        title: values[nameIndex]?.trim() || 'Unnamed Station',
-        description: `Bit Rate: ${values[bitRateIndex] || 'unknown'} kbps, Sample Rate: ${values[sampleRateIndex] || 'unknown'} Hz`,
-        tags: ['radio', 'stream'],
-        createdAt: new Date()
-      };
-
-      logger(`Line ${lineNumber}: Created station: ${station.title} (${station.url})`);
-      return station;
-    })
-    .filter((item): item is StationData => item !== null) as UrlItem[];
 } 

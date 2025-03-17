@@ -1,74 +1,82 @@
-import React from 'react';
 import { Draggable } from 'react-beautiful-dnd';
-import { Card, CardContent, Typography, Chip, Box, IconButton } from '@mui/material';
-import { Delete as DeleteIcon, Edit as EditIcon, DragIndicator as DragIndicatorIcon } from '@mui/icons-material';
-import { UrlItem } from '../types/UrlItem';
+import { Card, CardContent, Typography, Box, IconButton } from '@mui/material';
+import { Delete as DeleteIcon, Edit as EditIcon, DragIndicator as DragIndicatorIcon, PlayArrow as PlayIcon } from '@mui/icons-material';
+import { Station } from '../types/Station';
+import { useState } from 'react';
 
 interface UrlListItemProps {
-  item: UrlItem;
+  item: Station;
   index: number;
   onDelete: (id: string) => void;
-  onEdit: (item: UrlItem) => void;
+  onEdit: (item: Station) => void;
 }
 
-export const UrlListItem: React.FC<UrlListItemProps> = ({ item, index, onDelete, onEdit }) => {
+export function UrlListItem({ item, index, onDelete, onEdit }: UrlListItemProps) {
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [audio] = useState(new Audio(item.url));
+
+  const handlePlayPause = () => {
+    if (isPlaying) {
+      audio.pause();
+    } else {
+      audio.play();
+    }
+    setIsPlaying(!isPlaying);
+  };
+
   return (
     <Draggable draggableId={item.id} index={index}>
-      {(provided) => (
+      {(provided, snapshot) => (
         <Card
           ref={provided.innerRef}
           {...provided.draggableProps}
-          sx={{ mb: 1, '&:hover': { boxShadow: 6 } }}
+          sx={{
+            mb: 1,
+            backgroundColor: snapshot.isDragging ? 'action.hover' : 'background.paper',
+            '&:hover': {
+              backgroundColor: 'action.hover'
+            }
+          }}
         >
-          <CardContent sx={{ py: 0.5, px: 2 }}>
-            <Box display="flex" alignItems="center" gap={2}>
-              <IconButton size="small" {...provided.dragHandleProps}>
-                <DragIndicatorIcon />
-              </IconButton>
-              <Typography 
-                variant="subtitle1" 
-                component="a" 
-                href={item.url} 
-                target="_blank" 
-                rel="noopener noreferrer" 
-                sx={{ 
-                  textDecoration: 'none',
-                  minWidth: '150px',
-                  maxWidth: '200px',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap'
-                }}
-              >
+          <CardContent sx={{ py: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
+            <IconButton
+              {...provided.dragHandleProps}
+              size="small"
+              sx={{ color: 'text.secondary' }}
+            >
+              <DragIndicatorIcon />
+            </IconButton>
+            <Box sx={{ flex: 1, minWidth: 0 }}>
+              <Typography variant="subtitle1" noWrap>
                 {item.title}
               </Typography>
-              <Box sx={{ display: 'flex', gap: 0.5 }}>
-                {item.tags.map((tag) => (
-                  <Chip key={tag} label={tag} size="small" sx={{ height: 20 }} />
-                ))}
-              </Box>
-              <Box sx={{ flex: 1, minWidth: 0 }}>
-                <audio
-                  controls
-                  style={{ width: '100%', height: '32px' }}
-                  src={item.url}
-                  preload="none"
-                >
-                  Your browser does not support the audio element.
-                </audio>
-              </Box>
-              <Box sx={{ display: 'flex', gap: 0.5 }}>
-                <IconButton size="small" onClick={() => onEdit(item)}>
-                  <EditIcon />
-                </IconButton>
-                <IconButton size="small" onClick={() => onDelete(item.id)}>
-                  <DeleteIcon />
-                </IconButton>
-              </Box>
+              <Typography variant="body2" color="text.secondary" noWrap>
+                {item.description || item.url}
+              </Typography>
+              {item.tags && item.tags.length > 0 && (
+                <Typography variant="caption" color="text.secondary">
+                  {item.tags.join(', ')}
+                </Typography>
+              )}
+            </Box>
+            <IconButton 
+              size="small" 
+              onClick={handlePlayPause}
+              color={isPlaying ? "primary" : "default"}
+            >
+              <PlayIcon />
+            </IconButton>
+            <Box sx={{ display: 'flex', gap: 0.5 }}>
+              <IconButton size="small" onClick={() => onEdit(item)}>
+                <EditIcon />
+              </IconButton>
+              <IconButton size="small" onClick={() => onDelete(item.id)}>
+                <DeleteIcon />
+              </IconButton>
             </Box>
           </CardContent>
         </Card>
       )}
     </Draggable>
   );
-}; 
+} 

@@ -1,111 +1,61 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { DragDropContext, Droppable } from 'react-beautiful-dnd';
-import { Container, Typography, Box, Button, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Alert, ThemeProvider, createTheme } from '@mui/material';
+import { Container, Typography, Box, Button, Dialog, DialogTitle, DialogContent, DialogActions, TextField, ThemeProvider, createTheme } from '@mui/material';
 import { Add as AddIcon } from '@mui/icons-material';
 import { UrlListItem } from './components/UrlListItem';
-import { UrlItem } from './types/UrlItem';
 import { parseStationsFile } from './utils/stationParser';
 import { DebugConsole } from './components/DebugConsole';
+import { Station } from './types/Station';
 
 // Create dark theme
 const darkTheme = createTheme({
   palette: {
     mode: 'dark',
-    background: {
-      default: '#121212',
-      paper: '#1e1e1e',
-    },
-    text: {
-      primary: '#fff',
-      secondary: '#b0b0b0',
-    },
-  },
-  components: {
-    MuiCard: {
-      styleOverrides: {
-        root: {
-          backgroundColor: '#1e1e1e',
-        },
-      },
-    },
-    MuiChip: {
-      styleOverrides: {
-        root: {
-          backgroundColor: '#2d2d2d',
-        },
-      },
-    },
   },
 });
 
-interface DebugMessage {
-  timestamp: Date;
-  message: string;
-  type: 'info' | 'error' | 'warning';
-}
-
 function App() {
-  const [items, setItems] = useState<UrlItem[]>([]);
+  const [items, setItems] = useState<Station[]>([]);
   const [openDialog, setOpenDialog] = useState(false);
-  const [editingItem, setEditingItem] = useState<UrlItem | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [debugMessages, setDebugMessages] = useState<DebugMessage[]>([]);
+  const [editingItem, setEditingItem] = useState<Station | null>(null);
   const [formData, setFormData] = useState({
-    url: '',
     title: '',
+    url: '',
     description: '',
     tags: '',
   });
+  const [debugMessages, setDebugMessages] = useState<string[]>([]);
+  const [error, setError] = useState<string | null>(null);
 
-  const addDebugMessage = (message: string, type: 'info' | 'error' | 'warning' = 'info') => {
-    setDebugMessages(prev => [...prev, {
-      timestamp: new Date(),
-      message,
-      type
-    }]);
+  const addDebugMessage = (message: string) => {
+    console.log(message); // Also log to browser console
+    setDebugMessages(prev => [...prev, `${new Date().toISOString()}: ${message}`]);
   };
 
   useEffect(() => {
-    addDebugMessage('Application started');
-    addDebugMessage('Attempting to load stations file from /etc/stations.txt');
-    
-    fetch('/etc/stations.txt')
-      .then(response => {
-        addDebugMessage(`Fetch response received with status: ${response.status}`);
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        return response.text();
-      })
-      .then(content => {
-        addDebugMessage(`File content received, length: ${content.length} characters`);
-        if (content.length === 0) {
-          addDebugMessage('Warning: Empty file content received', 'warning');
-          return;
-        }
+    const loadStations = async () => {
+      try {
+        addDebugMessage('Starting to load stations...');
+        addDebugMessage(`Window electron available: ${!!window.electron}`);
         
-        const previewLines = content.split('\n').slice(0, 3);
-        addDebugMessage('Content preview:');
-        previewLines.forEach((line, index) => {
-          addDebugMessage(`Line ${index + 1}: ${line.substring(0, 100)}...`);
-        });
-        
-        const stations = parseStationsFile(content, addDebugMessage);
+        const stations = await parseStationsFile({ log: addDebugMessage });
         addDebugMessage(`Parsed ${stations.length} stations from file`);
         
         if (stations.length === 0) {
-          addDebugMessage('Warning: No valid stations found in file', 'warning');
-        } else {
-          addDebugMessage(`First station: ${stations[0].title} (${stations[0].url})`);
+          addDebugMessage('No stations found in file');
+          return;
         }
         
+        addDebugMessage(`First station: ${stations[0].title} (${stations[0].url})`);
         setItems(stations);
-      })
-      .catch(error => {
-        const errorMessage = `Error loading stations: ${error.message}`;
-        addDebugMessage(errorMessage, 'error');
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        addDebugMessage(`Error loading stations: ${errorMessage}`);
         setError(errorMessage);
-      });
+      }
+    };
+
+    loadStations();
   }, []);
 
   const handleDragEnd = (result: any) => {
@@ -118,20 +68,20 @@ function App() {
     setItems(newItems);
   };
 
-  const handleOpenDialog = (item?: UrlItem) => {
+  const handleOpenDialog = (item?: Station) => {
     if (item) {
       setEditingItem(item);
       setFormData({
-        url: item.url,
         title: item.title,
-        description: item.description,
-        tags: item.tags.join(', '),
+        url: item.url,
+        description: item.description || '',
+        tags: item.tags?.join(', ') || '',
       });
     } else {
       setEditingItem(null);
       setFormData({
-        url: '',
         title: '',
+        url: '',
         description: '',
         tags: '',
       });
@@ -145,10 +95,10 @@ function App() {
   };
 
   const handleSubmit = () => {
-    const newItem: UrlItem = {
+    const newItem: Station = {
       id: editingItem?.id || crypto.randomUUID(),
-      url: formData.url,
       title: formData.title,
+      url: formData.url,
       description: formData.description,
       tags: formData.tags.split(',').map(tag => tag.trim()).filter(Boolean),
       createdAt: editingItem?.createdAt || new Date(),
@@ -169,100 +119,95 @@ function App() {
 
   return (
     <ThemeProvider theme={darkTheme}>
-      <Box sx={{ bgcolor: 'background.default', minHeight: '100vh' }}>
-        <Container maxWidth="md" sx={{ py: 4, mb: '220px' }}>
-          <Box display="flex" justifyContent="space-between" alignItems="center" mb={4}>
-            <Typography variant="h4" component="h1">
-              Radio Stations
-            </Typography>
-            <Button
-              variant="contained"
-              startIcon={<AddIcon />}
-              onClick={() => handleOpenDialog()}
-            >
-              Add Station
-            </Button>
+      <Container maxWidth="md" sx={{ py: 4 }}>
+        <Box sx={{ mb: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <Typography variant="h4" component="h1">
+            My Radio
+          </Typography>
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={() => handleOpenDialog()}
+          >
+            Add Station
+          </Button>
+        </Box>
+
+        {error && (
+          <Box sx={{ mb: 2, p: 2, bgcolor: 'error.main', color: 'error.contrastText', borderRadius: 1 }}>
+            <Typography>Error: {error}</Typography>
           </Box>
+        )}
 
-          {error && (
-            <Alert severity="error" sx={{ mb: 2 }}>
-              {error}
-            </Alert>
-          )}
-
-          {items.length === 0 && !error && (
-            <Alert severity="info" sx={{ mb: 2 }}>
-              Loading stations...
-            </Alert>
-          )}
-
-          <DragDropContext onDragEnd={handleDragEnd}>
-            <Droppable droppableId="url-list">
-              {(provided) => (
-                <Box
-                  ref={provided.innerRef}
-                  {...provided.droppableProps}
-                >
-                  {items.map((item, index) => (
-                    <UrlListItem
-                      key={item.id}
-                      item={item}
-                      index={index}
-                      onDelete={handleDelete}
-                      onEdit={handleOpenDialog}
-                    />
-                  ))}
-                  {provided.placeholder}
-                </Box>
-              )}
-            </Droppable>
-          </DragDropContext>
-
-          <Dialog open={openDialog} onClose={handleCloseDialog}>
-            <DialogTitle>{editingItem ? 'Edit Station' : 'Add New Station'}</DialogTitle>
-            <DialogContent>
-              <Box display="flex" flexDirection="column" gap={2} sx={{ mt: 2 }}>
-                <TextField
-                  label="URL"
-                  value={formData.url}
-                  onChange={(e) => setFormData({ ...formData, url: e.target.value })}
-                  fullWidth
-                  required
-                />
-                <TextField
-                  label="Title"
-                  value={formData.title}
-                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  fullWidth
-                  required
-                />
-                <TextField
-                  label="Description"
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  fullWidth
-                  multiline
-                  rows={3}
-                />
-                <TextField
-                  label="Tags (comma-separated)"
-                  value={formData.tags}
-                  onChange={(e) => setFormData({ ...formData, tags: e.target.value })}
-                  fullWidth
-                  helperText="Enter tags separated by commas"
-                />
+        <DragDropContext onDragEnd={handleDragEnd}>
+          <Droppable droppableId="stations">
+            {(provided) => (
+              <Box
+                {...provided.droppableProps}
+                ref={provided.innerRef}
+                sx={{ mb: 4 }}
+              >
+                {items.map((item, index) => (
+                  <UrlListItem
+                    key={item.id}
+                    item={item}
+                    index={index}
+                    onDelete={handleDelete}
+                    onEdit={handleOpenDialog}
+                  />
+                ))}
+                {provided.placeholder}
               </Box>
-            </DialogContent>
-            <DialogActions>
-              <Button onClick={handleCloseDialog}>Cancel</Button>
-              <Button onClick={handleSubmit} variant="contained">
-                {editingItem ? 'Save' : 'Add'}
-              </Button>
-            </DialogActions>
-          </Dialog>
-        </Container>
+            )}
+          </Droppable>
+        </DragDropContext>
+
+        <Dialog open={openDialog} onClose={handleCloseDialog}>
+          <DialogTitle>
+            {editingItem ? 'Edit Station' : 'Add New Station'}
+          </DialogTitle>
+          <DialogContent>
+            <Box sx={{ pt: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
+              <TextField
+                label="Title"
+                value={formData.title}
+                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                fullWidth
+                required
+              />
+              <TextField
+                label="URL"
+                value={formData.url}
+                onChange={(e) => setFormData({ ...formData, url: e.target.value })}
+                fullWidth
+                required
+              />
+              <TextField
+                label="Description"
+                value={formData.description}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                fullWidth
+                multiline
+                rows={2}
+              />
+              <TextField
+                label="Tags (comma-separated)"
+                value={formData.tags}
+                onChange={(e) => setFormData({ ...formData, tags: e.target.value })}
+                fullWidth
+              />
+            </Box>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={handleCloseDialog}>Cancel</Button>
+            <Button onClick={handleSubmit} variant="contained">
+              {editingItem ? 'Save' : 'Add'}
+            </Button>
+          </DialogActions>
+        </Dialog>
+
         <DebugConsole messages={debugMessages} />
-      </Box>
+      </Container>
     </ThemeProvider>
   );
 }

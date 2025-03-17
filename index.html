@@ -4,10 +4,44 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Vite + React + TS</title>
+    <title>My Radio</title>
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+        background-color: #121212;
+        color: #ffffff;
+      }
+      #root {
+        min-height: 100vh;
+      }
+      #error-message {
+        display: none;
+        position: fixed;
+        top: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        background-color: #d32f2f;
+        color: white;
+        padding: 10px 20px;
+        border-radius: 4px;
+        z-index: 9999;
+      }
+    </style>
   </head>
   <body>
+    <div id="error-message"></div>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+    <script>
+      window.addEventListener('error', function(e) {
+        const errorMessage = document.getElementById('error-message');
+        if (errorMessage) {
+          errorMessage.textContent = e.message;
+          errorMessage.style.display = 'block';
+        }
+        console.error('Global error:', e);
+      });
+    </script>
   </body>
 </html>

@@ -1,0 +1,189 @@
+title: BBC Radio 1
+url: https://stream.live.vc.bbcmedia.co.uk/bbc_radio_one
+tags: music, pop, uk
+description: BBC Radio 1 - The best new music and entertainment
+
+title: NPR News
+url: https://npr-ice.streamguys1.com/live.mp3
+tags: news, talk, us
+description: NPR News - Latest news and stories
+
+title: Jazz24
+url: https://live.wostreaming.net/direct/ppm-jazz24aac-ibc1
+tags: jazz, music
+description: Jazz24 - 24/7 jazz music
+
+title: RFA
+url: https://s2.voscast.com:12579/stream
+tags: radio, freeform
+description: Radio Free America
+
+title: WFMU
+url: http://stream0.wfmu.org/freeform-high.aac
+tags: radio, freeform, music
+description: WFMU Freeform Radio
+
+title: WHRB
+url: http://stream.whrb.org:8000/whrb-he-aac
+tags: radio, college
+description: WHRB Harvard Radio
+
+title: WRUV
+url: http://icecast.uvm.edu:8005/wruv_fm_256
+tags: radio, college
+description: WRUV University of Vermont
+
+title: Radio Relativa Madrid
+url: https://streamer.radio.co/sd6131729c/listen
+tags: radio, music
+description: Radio Relativa Madrid
+
+title: WWOZ
+url: https://wwoz-sc.streamguys1.com/wwoz-hi.mp3
+tags: radio, jazz, new orleans
+description: WWOZ New Orleans Jazz & Heritage Station
+
+title: WOJB
+url: http://peridot.streamguys.com:7450/live
+tags: radio, native american
+description: WOJB Tribal Community Radio
+
+title: WORT
+url: http://stream.wort-fm.org:8000/high.mp3
+tags: radio, community
+description: WORT Community Radio
+
+title: KALX
+url: http://stream.kalx.berkeley.edu:8000/kalx-256.mp3
+tags: radio, college
+description: KALX Berkeley Student Radio
+
+title: WDCB
+url: http://wdcb-ice.streamguys.org/wdcb128.m3u
+tags: radio, jazz
+description: WDCB College of DuPage Public Radio
+
+title: KBCS
+url: http://stream.pacificaservice.org:8000/kbcs
+tags: radio, community
+description: KBCS Bellevue College Radio
+
+title: WBUR
+url: http://audio.wbur.org/stream/live_mp3.m3u
+tags: radio, npr
+description: WBUR Boston's NPR News Station
+
+title: WYMS
+url: https://wyms.streamguys1.com/live
+tags: radio, community
+description: WYMS Milwaukee Public Radio
+
+title: KUVO
+url: http://kuvo-ice.streamguys.org:80/kuvo-aac-64
+tags: radio, jazz
+description: KUVO Jazz Radio
+
+title: WVMO
+url: https://19303.live.streamtheworld.com/WVMOFMAAC.aac
+tags: radio, community
+description: WVMO Voice of Monona
+
+title: WBGO
+url: http://wbgo.streamguys.net:80/wbgo
+tags: radio, jazz
+description: WBGO Jazz 88.3
+
+title: WNCU
+url: http://18893.live.streamtheworld.com/WNCUFM.mp3
+tags: radio, jazz
+description: WNCU Jazz Radio
+
+title: WNYC
+url: http://fm939.wnyc.org/wnycfm.aac
+tags: radio, npr
+description: WNYC New York Public Radio
+
+title: WPR
+url: https://wpr-ice.streamguys1.com/wpr-ideas-mp3-64
+tags: radio, npr
+description: WPR Wisconsin Public Radio
+
+title: B5
+url: https://br-b5aktuell-live.sslcast.addradio.de/br/b5aktuell/live/mp3/128/stream.mp3
+tags: radio, news
+description: B5 Aktuell
+
+title: KAMP
+url: http://kamp.arizona.edu/stream/kamp
+tags: radio, college
+description: KAMP University of Arizona Radio
+
+title: KCSC
+url: http://132.241.56.37:8000/stream
+tags: radio, college
+description: KCSC Chico State Radio
+
+title: KDFC
+url: http://provisioning.streamtheworld.com/pls/KDFCFM.pls
+tags: radio, classical
+description: KDFC Classical Radio
+
+title: KMHD
+url: https://d1qoovhrjse80j.cloudfront.net/kmhd_web.mp3
+tags: radio, jazz
+description: KMHD Jazz Radio
+
+title: SCAD
+url: http://atl-radio-a.scad.edu:8000/listen
+tags: radio, college
+description: SCAD Radio
+
+title: WDET
+url: https://wdet.streamguys1.com/live-aac
+tags: radio, npr
+description: WDET Detroit Public Radio
+
+title: WHPK
+url: http://www.whpk.org:8000/mp3
+tags: radio, college
+description: WHPK University of Chicago Radio
+
+title: WICB
+url: http://www.live365.com/play/327162
+tags: radio, college
+description: WICB Ithaca College Radio
+
+title: WQXR
+url: http://stream.wqxr.org/wqxr.aac
+tags: radio, classical
+description: WQXR Classical Radio
+
+title: WRBC
+url: http://stream.radioactivity.fm:8000/
+tags: radio, community
+description: WRBC Radio Free Brooklyn
+
+title: WRLR
+url: http://wrir.serverroom.us:7722/wrir
+tags: radio, community
+description: WRLR Community Radio
+
+title: WRNC
+url: http://mediabox.northland.edu:8060/mp3audio3.mp3
+tags: radio, college
+description: WRNC Northland College Radio
+
+title: WSRU
+url: http://74.91.20.139:8010/
+tags: radio, college
+description: WSRU Slippery Rock University Radio
+
+title: WSUM
+url: http://stream.studio.wsum.wisc.edu/wsum128
+tags: radio, college
+description: WSUM University of Wisconsin Radio
+
+title: WTUL
+url: http://129.81.156.83:8000/
+tags: radio, college
+description: WTUL Tulane University Radio 
