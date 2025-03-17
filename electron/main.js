@@ -50,7 +50,7 @@ function createWindow() {
 ipcMain.handle('get-stations-data', () => {
   const stationsPath = isDev ? 
     path.join(__dirname, '../stations.txt') : 
-    path.join(process.resourcesPath, 'stations.txt');
+    path.join(app.getPath('appData'), 'my_radio', 'stations.txt');
 
   console.log('Reading stations from:', stationsPath);
   console.log('File exists:', fs.existsSync(stationsPath));
