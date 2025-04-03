@@ -17,46 +17,83 @@ export function UrlListItem({ item, index, onDelete, onEdit, isPlaying, onPlayPa
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
+  // Function to parse M3U file and get the actual stream URL
+  const parseM3UFile = async (url: string): Promise<string | null> => {
+    try {
+      const response = await fetch(url);
+      const text = await response.text();
+      const lines = text.split('\n');
+      
+      // Find the first non-empty line that doesn't start with # (which is the actual stream URL)
+      const streamLine = lines.find(line => line.trim() && !line.trim().startsWith('#'));
+      return streamLine ? streamLine.trim() : null;
+    } catch (error) {
+      console.error('Error parsing M3U file:', error);
+      return null;
+    }
+  };
+
   // Handle play/pause and audio element lifecycle
   useEffect(() => {
-    if (isPlaying) {
-      if (!audioRef.current) {
-        console.log(`Creating new audio element for ${item.title}`);
-        audioRef.current = new Audio(item.url);
-        
-        audioRef.current.addEventListener('error', (e) => {
-          console.error(`Audio error for ${item.title}:`, e);
-          setIsLoading(false);
-        });
-        
-        audioRef.current.addEventListener('canplaythrough', () => {
-          console.log(`Audio ready to play for ${item.title}`);
-          setIsLoading(false);
-        });
-      }
+    const setupAudio = async () => {
+      if (isPlaying) {
+        try {
+          let finalUrl = item.url;
+          
+          // If URL ends with .m3u, parse it to get the actual stream URL
+          if (item.url.toLowerCase().endsWith('.m3u')) {
+            setIsLoading(true);
+            const parsedUrl = await parseM3UFile(item.url);
+            if (!parsedUrl) {
+              throw new Error('Could not parse M3U file');
+            }
+            finalUrl = parsedUrl;
+          }
 
-      console.log(`Starting playback for ${item.title}`);
-      setIsLoading(true);
-      const playPromise = audioRef.current.play();
-      if (playPromise !== undefined) {
-        playPromise
-          .then(() => {
-            console.log(`Successfully started playing ${item.title}`);
-            setIsLoading(false);
-          })
-          .catch(error => {
-            console.error(`Error playing ${item.title}:`, error);
-            setIsLoading(false);
-          });
+          if (!audioRef.current) {
+            console.log(`Creating new audio element for ${item.title}`);
+            audioRef.current = new Audio(finalUrl);
+            
+            audioRef.current.addEventListener('error', (e) => {
+              console.error(`Audio error for ${item.url}:`, e);
+              setIsLoading(false);
+            });
+            
+            audioRef.current.addEventListener('canplaythrough', () => {
+              console.log(`Audio ready to play for ${item.title}`);
+              setIsLoading(false);
+            });
+          }
+
+          console.log(`Starting playback for ${item.title}`);
+          setIsLoading(true);
+          const playPromise = audioRef.current.play();
+          if (playPromise !== undefined) {
+            playPromise
+              .then(() => {
+                console.log(`Successfully started playing ${item.title}`);
+                setIsLoading(false);
+              })
+              .catch(error => {
+                console.error(`Error playing ${item.url}:`, error);
+                setIsLoading(false);
+              });
+          }
+        } catch (error) {
+          console.error(`Error setting up audio for ${item.url}:`, error);
+          setIsLoading(false);
+        }
+      } else {
+        if (audioRef.current) {
+          console.log(`Stopping and cleaning up audio for ${item.title}`);
+          audioRef.current.pause();
+          audioRef.current = null;
+          setIsLoading(false);
+        }
       }
-    } else {
-      if (audioRef.current) {
-        console.log(`Stopping and cleaning up audio for ${item.title}`);
-        audioRef.current.pause();
-        audioRef.current = null;
-        setIsLoading(false);
-      }
-    }
+    };
+
+    setupAudio();
 
     return () => {
       if (audioRef.current) {
