@@ -4,6 +4,16 @@ export interface ScheduleItem {
   endHour: number;  // 0-23
 }
 
+export interface DaySchedule {
+  day: number;
+  time?: string;
+}
+
+export interface DayPlayStats {
+  day: number;
+  playCount: number;
+}
+
 export interface Station {
   id: string;
   title: string;
@@ -12,4 +22,5 @@ export interface Station {
   tags?: string[];
   createdAt: Date;
   schedule?: ScheduleItem[];
+  playStats?: DayPlayStats[];
 } 

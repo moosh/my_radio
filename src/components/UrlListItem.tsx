@@ -1,7 +1,7 @@
 import { Draggable } from 'react-beautiful-dnd';
 import { Card, CardContent, Typography, Box, IconButton, CircularProgress, Tooltip } from '@mui/material';
 import { Delete as DeleteIcon, Edit as EditIcon, DragIndicator as DragIndicatorIcon, PlayArrow as PlayIcon, Pause as PauseIcon } from '@mui/icons-material';
-import { Station } from '../types/Station';
+import { Station, DayPlayStats } from '../types/Station';
 import { useEffect, useRef, useState } from 'react';
 
 interface UrlListItemProps {
@@ -11,9 +11,10 @@ interface UrlListItemProps {
   onEdit: (item: Station) => void;
   isPlaying: boolean;
   onPlayPause: (stationId: string) => void;
+  onUpdatePlayStats: (stationId: string, playStats: DayPlayStats[]) => void;
 }
 
-export function UrlListItem({ item, index, onDelete, onEdit, isPlaying, onPlayPause }: UrlListItemProps) {
+export function UrlListItem({ item, index, onDelete, onEdit, isPlaying, onPlayPause, onUpdatePlayStats }: UrlListItemProps) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -31,6 +32,39 @@ export function UrlListItem({ item, index, onDelete, onEdit, isPlaying, onPlayPa
       console.error('Error parsing M3U file:', error);
       return null;
     }
+  };
+
+  // Function to get play count for a specific day
+  const getPlayCount = (dayIndex: number) => {
+    return item.playStats?.find(stat => stat.day === dayIndex)?.playCount || 0;
+  };
+
+  // Function to calculate opacity based on play count
+  const getOpacity = (playCount: number) => {
+    const maxOpacity = 0.9; // Maximum opacity
+    const baseOpacity = 0.1; // Starting opacity for 1 play
+    const maxPlays = 10; // Number of plays for max opacity
+    
+    if (playCount === 0) return 0;
+    return Math.min(baseOpacity + (maxOpacity - baseOpacity) * (playCount / maxPlays), maxOpacity);
+  };
+
+  // Function to update play count for current day
+  const updatePlayCount = () => {
+    const today = new Date().getDay();
+    const currentPlayStats = item.playStats || [];
+    const existingStat = currentPlayStats.find(stat => stat.day === today);
+    
+    let newPlayStats: DayPlayStats[];
+    if (existingStat) {
+      newPlayStats = currentPlayStats.map(stat =>
+        stat.day === today ? { ...stat, playCount: stat.playCount + 1 } : stat
+      );
+    } else {
+      newPlayStats = [...currentPlayStats, { day: today, playCount: 1 }];
+    }
+    
+    onUpdatePlayStats(item.id, newPlayStats);
   };
 
   // Handle play/pause and audio element lifecycle
@@ -62,6 +96,8 @@ export function UrlListItem({ item, index, onDelete, onEdit, isPlaying, onPlayPa
             audioRef.current.addEventListener('canplaythrough', () => {
               console.log(`Audio ready to play for ${item.title}`);
               setIsLoading(false);
+              // Update play count when playback starts successfully
+              updatePlayCount();
             });
           }
 
@@ -201,22 +237,41 @@ export function UrlListItem({ item, index, onDelete, onEdit, isPlaying, onPlayPa
                 borderColor: 'divider',
                 alignItems: 'center'
               }}>
-                {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, index) => (
-                  <Box key={day} sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.5 }}>
-                    <Typography variant="caption" sx={{ fontSize: '0.7rem', color: 'text.secondary' }}>
-                      {day}
-                    </Typography>
-                    <Box
-                      sx={{
-                        width: 16,
-                        height: 16,
-                        borderRadius: 0.5,
-                        bgcolor: item.schedule?.some(s => s.day === index) ? 'primary.main' : 'action.hover',
-                        transition: 'background-color 0.2s'
-                      }}
-                    />
-                  </Box>
-                ))}
+                {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, index) => {
+                  const playCount = getPlayCount(index);
+                  const opacity = getOpacity(playCount);
+                  
+                  return (
+                    <Box key={day} sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.5 }}>
+                      <Typography variant="caption" sx={{ fontSize: '0.7rem', color: 'text.secondary' }}>
+                        {day}
+                      </Typography>
+                      <Tooltip title={playCount > 0 ? `Played ${playCount} times` : 'Not played yet'}>
+                        <Box
+                          sx={{
+                            width: 16,
+                            height: 16,
+                            borderRadius: 0.5,
+                            bgcolor: 'action.hover',
+                            position: 'relative',
+                            '&::after': {
+                              content: '""',
+                              position: 'absolute',
+                              top: 0,
+                              left: 0,
+                              right: 0,
+                              bottom: 0,
+                              borderRadius: 'inherit',
+                              bgcolor: 'primary.main',
+                              opacity: opacity,
+                              transition: 'opacity 0.2s'
+                            }
+                          }}
+                        />
+                      </Tooltip>
+                    </Box>
+                  );
+                })}
               </Box>
             </Box>
           </CardContent>

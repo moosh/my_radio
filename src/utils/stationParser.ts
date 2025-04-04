@@ -1,4 +1,4 @@
-import { Station } from '../types/Station';
+import { Station, DayPlayStats } from '../types/Station';
 
 interface ParseOptions {
   log?: (message: string) => void;
@@ -79,6 +79,13 @@ export async function parseStationsFile({ log = defaultLog }: ParseOptions = {})
           break;
         case 'description':
           currentStation.description = value;
+          break;
+        case 'playstats':
+          try {
+            currentStation.playStats = JSON.parse(value) as DayPlayStats[];
+          } catch (error) {
+            log(`Error parsing play stats for station ${currentStation.title}: ${error}`);
+          }
           break;
         default:
           log(`Unknown key in stations file: ${key}`);

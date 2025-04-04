@@ -5,7 +5,7 @@ import { Add as AddIcon } from '@mui/icons-material';
 import { UrlListItem } from './components/UrlListItem';
 import { parseStationsFile } from './utils/stationParser';
 import { DebugConsole } from './components/DebugConsole';
-import { Station } from './types/Station';
+import { Station, DayPlayStats } from './types/Station';
 
 // Create dark theme
 const darkTheme = createTheme({
@@ -126,6 +126,30 @@ function App() {
     loadStations();
   }, []);
 
+  const saveStations = async (stations: Station[]) => {
+    try {
+      addDebugMessage('Saving stations...');
+      const stationsText = stations.map(station => `
+title: ${station.title}
+url: ${station.url}${station.description ? `\ndescription: ${station.description}` : ''}${station.tags && station.tags.length > 0 ? `\ntags: ${station.tags.join(', ')}` : ''}${station.playStats && station.playStats.length > 0 ? `\nplaystats: ${JSON.stringify(station.playStats)}` : ''}
+`).join('\n');
+
+      if (window.electron) {
+        const success = await window.electron.saveStationsData(stationsText);
+        if (success) {
+          addDebugMessage('Successfully saved stations');
+        } else {
+          addDebugMessage('Failed to save stations');
+        }
+      } else {
+        addDebugMessage('Electron API not available, cannot save stations');
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      addDebugMessage(`Error saving stations: ${errorMessage}`);
+    }
+  };
+
   const handleDragEnd = async (result: DropResult) => {
     if (!result.destination) return;
 
@@ -135,29 +159,15 @@ function App() {
     newItems.splice(destination.index, 0, reorderedItem);
 
     setItems(newItems);
+    await saveStations(newItems);
+  };
 
-    // Save the updated order to the stations file
-    try {
-      addDebugMessage('Saving updated station order...');
-      const stationsText = newItems.map(station => `
-title: ${station.title}
-url: ${station.url}${station.description ? `\ndescription: ${station.description}` : ''}${station.tags && station.tags.length > 0 ? `\ntags: ${station.tags.join(', ')}` : ''}
-`).join('\n');
-
-      if (window.electron) {
-        const success = await window.electron.saveStationsData(stationsText);
-        if (success) {
-          addDebugMessage('Successfully saved station order');
-        } else {
-          addDebugMessage('Failed to save station order');
-        }
-      } else {
-        addDebugMessage('Electron API not available, cannot save station order');
-      }
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      addDebugMessage(`Error saving station order: ${errorMessage}`);
-    }
+  const handleUpdatePlayStats = async (stationId: string, playStats: DayPlayStats[]) => {
+    const newItems = items.map(item =>
+      item.id === stationId ? { ...item, playStats } : item
+    );
+    setItems(newItems);
+    await saveStations(newItems);
   };
 
   const handleOpenDialog = (item?: Station) => {
@@ -257,6 +267,7 @@ url: ${station.url}${station.description ? `\ndescription: ${station.description
                       onEdit={handleOpenDialog}
                       isPlaying={currentlyPlayingId === item.id}
                       onPlayPause={handlePlayPause}
+                      onUpdatePlayStats={handleUpdatePlayStats}
                     />
                   ))}
                   {provided.placeholder}
