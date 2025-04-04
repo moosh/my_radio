@@ -10,6 +10,10 @@ contextBridge.exposeInMainWorld('electron', {
   getStationsData: () => {
     console.log('getStationsData called');
     return ipcRenderer.invoke('get-stations-data');
+  },
+  saveStationsData: (data) => {
+    console.log('saveStationsData called');
+    return ipcRenderer.invoke('save-stations-data', data);
   }
 });
 

@@ -3,6 +3,13 @@ const path = require('path');
 const isDev = require('electron-is-dev');
 const fs = require('fs');
 
+// Helper function to get stations file path
+function getStationsPath() {
+  return isDev ? 
+    path.join(__dirname, '../stations.txt') : 
+    path.join(app.getPath('appData'), 'my_radio', 'stations.txt');
+}
+
 function createWindow() {
   console.log('Creating window...');
   const win = new BrowserWindow({
@@ -48,10 +55,7 @@ function createWindow() {
 
 // Handle IPC calls
 ipcMain.handle('get-stations-data', () => {
-  const stationsPath = isDev ? 
-    path.join(__dirname, '../stations.txt') : 
-    path.join(app.getPath('appData'), 'my_radio', 'stations.txt');
-
+  const stationsPath = getStationsPath();
   console.log('Reading stations from:', stationsPath);
   console.log('File exists:', fs.existsSync(stationsPath));
 
@@ -62,6 +66,30 @@ ipcMain.handle('get-stations-data', () => {
   } catch (error) {
     console.error('Error reading stations file:', error);
     return '';
+  }
+});
+
+// Handle saving stations data
+ipcMain.handle('save-stations-data', async (event, data) => {
+  const stationsPath = getStationsPath();
+  console.log('Saving stations to:', stationsPath);
+
+  try {
+    // Ensure directory exists in production
+    if (!isDev) {
+      const dir = path.dirname(stationsPath);
+      if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true });
+      }
+    }
+
+    // Write the data
+    fs.writeFileSync(stationsPath, data, 'utf8');
+    console.log('Successfully saved stations file');
+    return true;
+  } catch (error) {
+    console.error('Error saving stations file:', error);
+    return false;
   }
 });
 

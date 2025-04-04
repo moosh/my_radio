@@ -126,7 +126,7 @@ function App() {
     loadStations();
   }, []);
 
-  const handleDragEnd = (result: DropResult) => {
+  const handleDragEnd = async (result: DropResult) => {
     if (!result.destination) return;
 
     const { source, destination } = result;
@@ -135,6 +135,29 @@ function App() {
     newItems.splice(destination.index, 0, reorderedItem);
 
     setItems(newItems);
+
+    // Save the updated order to the stations file
+    try {
+      addDebugMessage('Saving updated station order...');
+      const stationsText = newItems.map(station => `
+title: ${station.title}
+url: ${station.url}${station.description ? `\ndescription: ${station.description}` : ''}${station.tags && station.tags.length > 0 ? `\ntags: ${station.tags.join(', ')}` : ''}
+`).join('\n');
+
+      if (window.electron) {
+        const success = await window.electron.saveStationsData(stationsText);
+        if (success) {
+          addDebugMessage('Successfully saved station order');
+        } else {
+          addDebugMessage('Failed to save station order');
+        }
+      } else {
+        addDebugMessage('Electron API not available, cannot save station order');
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      addDebugMessage(`Error saving station order: ${errorMessage}`);
+    }
   };
 
   const handleOpenDialog = (item?: Station) => {
