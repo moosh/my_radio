@@ -215,8 +215,10 @@ url: ${station.url}${station.description ? `\ndescription: ${station.description
     handleCloseDialog();
   };
 
-  const handleDelete = (id: string) => {
-    setItems(items.filter(item => item.id !== id));
+  const handleDelete = async (id: string) => {
+    const newItems = items.filter(item => item.id !== id);
+    setItems(newItems);
+    await saveStations(newItems);
   };
 
   const handlePlayPause = (stationId: string) => {
