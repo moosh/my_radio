@@ -30,11 +30,60 @@ const StationMap: React.FC<StationMapProps> = ({ onStationSelect }) => {
 
   useEffect(() => {
     // Initialize audio element
-    audioRef.current = new Audio();
-    audioRef.current.addEventListener('error', (e) => {
+    if (!audioRef.current) {
+      audioRef.current = new Audio();
+      audioRef.current.crossOrigin = 'anonymous'; // Enable CORS
+    }
+    const audio = audioRef.current;
+    
+    if (!audio) return;
+
+    const handlePlay = () => {
+      console.log('Play event fired');
+      if (audio.src) {
+        const playingUrl = new URL(audio.src).toString();
+        console.log('Setting currently playing to:', playingUrl);
+        setCurrentlyPlaying(playingUrl);
+        updateAllPopups();
+      }
+    };
+
+    const handlePause = () => {
+      console.log('Pause event fired');
+      setCurrentlyPlaying(null);
+      updateAllPopups();
+    };
+
+    const handleError = (e: Event) => {
       console.error('Audio playback error:', e);
       setCurrentlyPlaying(null);
-    });
+      updateAllPopups();
+    };
+
+    const handlePlaying = () => {
+      console.log('Playing event fired');
+      if (audio.src) {
+        const playingUrl = new URL(audio.src).toString();
+        console.log('Setting currently playing to:', playingUrl);
+        setCurrentlyPlaying(playingUrl);
+        updateAllPopups();
+      }
+    };
+
+    const handleLoadStart = () => {
+      console.log('LoadStart event fired for:', audio.src);
+    };
+
+    const handleCanPlay = () => {
+      console.log('CanPlay event fired for:', audio.src);
+    };
+
+    audio.addEventListener('loadstart', handleLoadStart);
+    audio.addEventListener('canplay', handleCanPlay);
+    audio.addEventListener('play', handlePlay);
+    audio.addEventListener('playing', handlePlaying);
+    audio.addEventListener('pause', handlePause);
+    audio.addEventListener('error', handleError);
 
     // Initialize map
     if (!mapRef.current) {
@@ -53,28 +102,110 @@ const StationMap: React.FC<StationMapProps> = ({ onStationSelect }) => {
         mapRef.current.remove();
         mapRef.current = null;
       }
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current = null;
+      if (audio) {
+        audio.removeEventListener('loadstart', handleLoadStart);
+        audio.removeEventListener('canplay', handleCanPlay);
+        audio.removeEventListener('play', handlePlay);
+        audio.removeEventListener('playing', handlePlaying);
+        audio.removeEventListener('pause', handlePause);
+        audio.removeEventListener('error', handleError);
+        audio.pause();
       }
     };
   }, []);
 
-  const handlePlay = (station: RadioBrowserStation) => {
-    if (!audioRef.current) return;
+  const updateAllPopups = () => {
+    if (!markersRef.current) return;
+    console.log('Updating all popups, currentlyPlaying:', (window as any).currentlyPlaying);
+    
+    markersRef.current.eachLayer((layer: any) => {
+      if (layer instanceof L.Marker) {
+        const popup = layer.getPopup();
+        if (popup) {
+          const content = popup.getContent();
+          if (typeof content !== 'string') return;
+          
+          const match = content.match(/window\.handleStationPlay\('([^']+)'\)/);
+          if (!match) return;
+          
+          try {
+            const station: RadioBrowserStation = JSON.parse(decodeURIComponent(match[1]));
+            const stationUrl = new URL(station.url).toString();
+            console.log('Comparing URLs:', { stationUrl, currentlyPlaying: (window as any).currentlyPlaying });
+            const isPlaying = (window as any).currentlyPlaying === stationUrl;
+            console.log('Is playing:', isPlaying);
+            
+            popup.setContent(
+              `<div>
+                <h3>${station.name}</h3>
+                <p>${station.country} - ${station.language}</p>
+                <p>${station.tags}</p>
+                <p>${station.bitrate}kbps ${station.codec}</p>
+                <div style="display: flex; gap: 8px;">
+                  <button onclick="window.handleStationPlay('${encodeURIComponent(JSON.stringify(station))}')">
+                    ${isPlaying ? 'Stop' : 'Play'}
+                  </button>
+                  <button onclick="window.addStation('${encodeURIComponent(JSON.stringify(station))}')">
+                    Add to My Radio
+                  </button>
+                </div>
+              </div>`
+            );
+            popup.options.autoClose = false;
+            popup.options.closeOnClick = false;
+            popup.options.closeButton = true;
+          } catch (err) {
+            console.error('Failed to parse popup station data:', err);
+          }
+        }
+      }
+    });
+  };
 
-    if (currentlyPlaying === station.url) {
-      // Stop playing
-      audioRef.current.pause();
+  const handlePlay = async (stationJson: string) => {
+    try {
+      const station: RadioBrowserStation = JSON.parse(decodeURIComponent(stationJson));
+      const stationUrl = new URL(station.url).toString();
+      console.log('handlePlay called with URL:', stationUrl);
+      console.log('Current playing:', (window as any).currentlyPlaying);
+      
+      if ((window as any).currentlyPlaying === stationUrl) {
+        // Stop playing
+        console.log('Stopping playback');
+        if (audioRef.current) {
+          audioRef.current.pause();
+          audioRef.current.src = ''; // Clear the source
+          setCurrentlyPlaying(null);
+          (window as any).currentlyPlaying = null;
+        }
+      } else {
+        // Start playing new station
+        if (audioRef.current) {
+          console.log('Starting new station');
+          // Set initial state immediately for better UX
+          setCurrentlyPlaying(stationUrl);
+          (window as any).currentlyPlaying = stationUrl;
+          
+          // Reset the audio element
+          audioRef.current.pause();
+          audioRef.current.src = stationUrl;
+          
+          try {
+            await audioRef.current.play();
+            console.log('Play command issued successfully');
+          } catch (err) {
+            console.error('Error during play():', err);
+            setCurrentlyPlaying(null);
+            (window as any).currentlyPlaying = null;
+          }
+        }
+      }
+      updateAllPopups();
+    } catch (err) {
+      console.error('Error playing station:', err);
       setCurrentlyPlaying(null);
-    } else {
-      // Start playing new station
-      audioRef.current.src = station.url;
-      audioRef.current.play().catch(err => {
-        console.error('Failed to play station:', err);
-        setCurrentlyPlaying(null);
-      });
-      setCurrentlyPlaying(station.url);
+      (window as any).currentlyPlaying = null;
+      updateAllPopups();
     }
   };
 
@@ -102,6 +233,9 @@ const StationMap: React.FC<StationMapProps> = ({ onStationSelect }) => {
       // Add markers for each station
       stations.forEach(station => {
         if (station.geo_lat && station.geo_long && markersRef.current) {
+          const stationUrl = new URL(station.url).toString();
+          const isPlaying = currentlyPlaying === stationUrl;
+          
           const marker = L.marker([station.geo_lat, station.geo_long])
             .bindPopup(
               `<div>
@@ -111,7 +245,7 @@ const StationMap: React.FC<StationMapProps> = ({ onStationSelect }) => {
                 <p>${station.bitrate}kbps ${station.codec}</p>
                 <div style="display: flex; gap: 8px;">
                   <button onclick="window.handleStationPlay('${encodeURIComponent(JSON.stringify(station))}')">
-                    ${currentlyPlaying === station.url ? 'Stop' : 'Play'}
+                    ${isPlaying ? 'Stop' : 'Play'}
                   </button>
                   <button onclick="window.addStation('${encodeURIComponent(JSON.stringify(station))}')">
                     Add to My Radio
@@ -155,40 +289,11 @@ const StationMap: React.FC<StationMapProps> = ({ onStationSelect }) => {
   // Handle play/pause from popup button
   const handleStationPlay = (stationJson: string) => {
     try {
-      const station: RadioBrowserStation = JSON.parse(decodeURIComponent(stationJson));
-      handlePlay(station);
-      // Force marker popup update to reflect play state
-      if (markersRef.current) {
-        markersRef.current.eachLayer((layer: any) => {
-          if (layer instanceof L.Marker) {
-            const popup = layer.getPopup();
-            if (popup) {
-              popup.setContent(
-                `<div>
-                  <h3>${station.name}</h3>
-                  <p>${station.country} - ${station.language}</p>
-                  <p>${station.tags}</p>
-                  <p>${station.bitrate}kbps ${station.codec}</p>
-                  <div style="display: flex; gap: 8px;">
-                    <button onclick="window.handleStationPlay('${encodeURIComponent(JSON.stringify(station))}')">
-                      ${currentlyPlaying === station.url ? 'Stop' : 'Play'}
-                    </button>
-                    <button onclick="window.addStation('${encodeURIComponent(JSON.stringify(station))}')">
-                      Add to My Radio
-                    </button>
-                  </div>
-                </div>`
-              );
-              // Update popup options
-              popup.options.autoClose = false;
-              popup.options.closeOnClick = false;
-              popup.options.closeButton = true;
-            }
-          }
-        });
-      }
+      handlePlay(stationJson);
     } catch (err) {
       console.error('Failed to play station:', err);
+      setCurrentlyPlaying(null);
+      (window as any).currentlyPlaying = null;
     }
   };
 
@@ -196,9 +301,11 @@ const StationMap: React.FC<StationMapProps> = ({ onStationSelect }) => {
   useEffect(() => {
     (window as any).addStation = addStation;
     (window as any).handleStationPlay = handleStationPlay;
+    (window as any).currentlyPlaying = currentlyPlaying;
     return () => {
       delete (window as any).addStation;
       delete (window as any).handleStationPlay;
+      delete (window as any).currentlyPlaying;
     };
   }, [currentlyPlaying]);
 
@@ -247,7 +354,7 @@ const StationMap: React.FC<StationMapProps> = ({ onStationSelect }) => {
           alignItems: 'center'
         }}>
           <span>Now Playing</span>
-          <button onClick={() => handlePlay({ url: currentlyPlaying } as RadioBrowserStation)}>
+          <button onClick={() => handlePlay(JSON.stringify({ url: currentlyPlaying } as RadioBrowserStation))}>
             Stop
           </button>
         </div>
