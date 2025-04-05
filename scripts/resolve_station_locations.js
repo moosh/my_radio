@@ -9,19 +9,32 @@ const { promisify } = require('util');
 const dnsResolve = promisify(dns.resolve);
 const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
-// Function to extract base hostname from URL
+// Function to extract base hostname or IP from URL
 function getBaseHostname(urlStr) {
     try {
         if (!urlStr) return null;
-        return urlStr.replace(/^https?:\/\//i, '').split('/')[0].split(':')[0];
+        
+        // Remove protocol and get the host part
+        const hostPart = urlStr.replace(/^https?:\/\//i, '').split('/')[0].split(':')[0];
+        
+        // Check if it's an IP address (simple check for now)
+        const isIp = /^(\d{1,3}\.){3}\d{1,3}$/.test(hostPart);
+        
+        return {
+            host: hostPart,
+            isIp: isIp
+        };
     } catch (err) {
         return null;
     }
 }
 
-// Function to get IP from hostname
-async function getIpFromHostname(hostname) {
+// Function to get IP from hostname or return the IP if it's already an IP
+async function getIpFromHostname(hostname, isIp) {
     try {
+        if (isIp) {
+            return hostname; // It's already an IP
+        }
         const addresses = await dnsResolve(hostname);
         return addresses[0];
     } catch (err) {
@@ -71,33 +84,42 @@ async function main() {
     // Group stations by base hostname
     const stationsByHost = new Map();
     let skippedUrls = 0;
+    let ipCount = 0;
+    let hostnameCount = 0;
     
     stationsWithoutCoords.forEach(station => {
-        const hostname = getBaseHostname(station.url_resolved || station.url);
-        if (!hostname) {
+        const hostInfo = getBaseHostname(station.url_resolved || station.url);
+        if (!hostInfo || !hostInfo.host) {
             skippedUrls++;
             return;
         }
         
-        if (!stationsByHost.has(hostname)) {
-            stationsByHost.set(hostname, []);
+        if (!stationsByHost.has(hostInfo.host)) {
+            stationsByHost.set(hostInfo.host, {
+                stations: [],
+                isIp: hostInfo.isIp
+            });
+            if (hostInfo.isIp) ipCount++;
+            else hostnameCount++;
         }
-        stationsByHost.get(hostname).push(station);
+        stationsByHost.get(hostInfo.host).stations.push(station);
     });
     
     console.log(`\nURL Analysis:`);
-    console.log(`Total unique hostnames: ${stationsByHost.size}`);
+    console.log(`Total unique hosts: ${stationsByHost.size}`);
+    console.log(`- IP addresses: ${ipCount}`);
+    console.log(`- Hostnames: ${hostnameCount}`);
     console.log(`Skipped invalid URLs: ${skippedUrls}`);
     
-    // Convert to array of unique hostnames for batch processing
-    const uniqueHosts = Array.from(stationsByHost.keys());
+    // Convert to array of unique hosts for batch processing
+    const uniqueHosts = Array.from(stationsByHost.entries());
     
     let resolved = 0;
     let failed = 0;
     let rateLimited = 0;
     let processed = 0;
     
-    // Process unique hostnames in batches
+    // Process unique hosts in batches
     const batchSize = 45;
     for (let i = 0; i < uniqueHosts.length; i += batchSize) {
         const batch = uniqueHosts.slice(i, i + batchSize);
@@ -105,12 +127,12 @@ async function main() {
         const totalBatches = Math.ceil(uniqueHosts.length/batchSize);
         console.log(`\nProcessing batch ${batchNum} of ${totalBatches} (${processed}/${uniqueHosts.length} hosts processed)`);
         
-        for (const hostname of batch) {
+        for (const [host, info] of batch) {
             try {
-                // Get IP address
-                const ip = await getIpFromHostname(hostname);
+                // Get IP address (or use the IP directly)
+                const ip = await getIpFromHostname(host, info.isIp);
                 if (!ip) {
-                    console.log(`❌ Could not resolve IP for hostname: ${hostname}`);
+                    console.log(`❌ Could not resolve IP for ${info.isIp ? 'IP' : 'hostname'}: ${host}`);
                     failed++;
                     continue;
                 }
@@ -118,19 +140,18 @@ async function main() {
                 // Get coordinates from IP
                 const coords = await getCoordinatesFromIp(ip);
                 if (coords) {
-                    // Update all stations with this hostname
-                    const stationsToUpdate = stationsByHost.get(hostname);
-                    stationsToUpdate.forEach(station => {
+                    // Update all stations with this host
+                    info.stations.forEach(station => {
                         station.geo_lat = coords.lat.toString();
                         station.geo_long = coords.lon.toString();
                         if (!station.country) station.country = coords.country;
                         if (!station.state) station.state = coords.city;
                     });
                     
-                    console.log(`✅ Found location for ${stationsToUpdate.length} stations at ${hostname} - ${coords.city}, ${coords.country}`);
+                    console.log(`✅ Found location for ${info.stations.length} stations at ${host} - ${coords.city}, ${coords.country}`);
                     resolved++;
                 } else {
-                    console.log(`❌ Could not get location for hostname: ${hostname} (${ip})`);
+                    console.log(`❌ Could not get location for ${info.isIp ? 'IP' : 'hostname'}: ${host} (${ip})`);
                     failed++;
                 }
                 
@@ -139,9 +160,9 @@ async function main() {
                     console.log('⚠️ Rate limited, waiting...');
                     rateLimited++;
                     await wait(60000); // Wait 1 minute
-                    i -= 1; // Retry this hostname
+                    i -= 1; // Retry this host
                 } else {
-                    console.log(`❌ Error processing hostname: ${hostname} - ${err.message || 'Unknown error'}`);
+                    console.log(`❌ Error processing ${info.isIp ? 'IP' : 'hostname'}: ${host} - ${err.message || 'Unknown error'}`);
                     failed++;
                 }
             }
@@ -166,9 +187,11 @@ async function main() {
     console.log('\nFinal Statistics:');
     console.log(`Total stations: ${stations.length}`);
     console.log(`Stations with coordinates: ${withCoords}`);
-    console.log(`Unique hostnames processed: ${uniqueHosts.length}`);
-    console.log(`Successfully resolved hostnames: ${resolved}`);
-    console.log(`Failed hostnames: ${failed}`);
+    console.log(`Unique hosts processed: ${uniqueHosts.length}`);
+    console.log(`- IP addresses: ${ipCount}`);
+    console.log(`- Hostnames: ${hostnameCount}`);
+    console.log(`Successfully resolved: ${resolved}`);
+    console.log(`Failed to resolve: ${failed}`);
     console.log(`Rate limit hits: ${rateLimited}`);
     console.log(`Success rate: ${Math.round(resolved/processed*100)}%`);
     
