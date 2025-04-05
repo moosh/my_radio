@@ -39,14 +39,17 @@ export function UrlListItem({ item, index, onDelete, onEdit, isPlaying, onPlayPa
     return item.playStats?.find(stat => stat.day === dayIndex)?.playCount || 0;
   };
 
-  // Function to calculate opacity based on play count
+  // Function to calculate opacity based on play count using logarithmic scale
   const getOpacity = (playCount: number) => {
     const maxOpacity = 0.9; // Maximum opacity
     const baseOpacity = 0.1; // Starting opacity for 1 play
-    const maxPlays = 10; // Number of plays for max opacity
+    const maxPlays = 100; // Number of plays for max opacity
     
     if (playCount === 0) return 0;
-    return Math.min(baseOpacity + (maxOpacity - baseOpacity) * (playCount / maxPlays), maxOpacity);
+    
+    // Use logarithmic scale for smoother progression
+    const logScale = Math.log10(playCount + 1) / Math.log10(maxPlays + 1);
+    return Math.min(baseOpacity + (maxOpacity - baseOpacity) * logScale, maxOpacity);
   };
 
   // Function to update play count for current day
@@ -246,7 +249,7 @@ export function UrlListItem({ item, index, onDelete, onEdit, isPlaying, onPlayPa
                       <Typography variant="caption" sx={{ fontSize: '0.7rem', color: 'text.secondary' }}>
                         {day}
                       </Typography>
-                      <Tooltip title={playCount > 0 ? `Played ${playCount} times` : 'Not played yet'}>
+                      <Tooltip title={`Played ${playCount} time${playCount !== 1 ? 's' : ''}`}>
                         <Box
                           sx={{
                             width: 16,

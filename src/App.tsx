@@ -196,7 +196,7 @@ url: ${station.url}${station.description ? `\ndescription: ${station.description
     setEditingItem(null);
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     const newItem: Station = {
       id: editingItem?.id || crypto.randomUUID(),
       title: formData.title,
@@ -206,12 +206,12 @@ url: ${station.url}${station.description ? `\ndescription: ${station.description
       createdAt: editingItem?.createdAt || new Date(),
     };
 
-    if (editingItem) {
-      setItems(items.map(item => item.id === editingItem.id ? newItem : item));
-    } else {
-      setItems([...items, newItem]);
-    }
-
+    const newItems = editingItem 
+      ? items.map(item => item.id === editingItem.id ? newItem : item)
+      : [...items, newItem];
+    
+    setItems(newItems);
+    await saveStations(newItems);
     handleCloseDialog();
   };
 
