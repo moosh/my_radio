@@ -3,6 +3,9 @@ const path = require('path');
 const isDev = require('electron-is-dev');
 const fs = require('fs');
 
+let mainWindow;
+let mapWindow;
+
 // Helper function to get stations file path
 function getStationsPath() {
   return isDev ? 
@@ -11,10 +14,9 @@ function getStationsPath() {
 }
 
 function createWindow() {
-  console.log('Creating window...');
-  const win = new BrowserWindow({
-    width: 800,
-    height: 600,
+  mainWindow = new BrowserWindow({
+    width: 1200,
+    height: 800,
     webPreferences: {
       nodeIntegration: true,
       contextIsolation: true,
@@ -22,36 +24,60 @@ function createWindow() {
     }
   });
 
-  // Load the app
+  mainWindow.loadURL(
+    isDev
+      ? 'http://localhost:5173'
+      : `file://${path.join(__dirname, '../dist/index.html')}`
+  );
+
   if (isDev) {
-    console.log('Loading development URL...');
-    win.loadURL('http://localhost:5173');
-    win.webContents.openDevTools();
-  } else {
-    const indexPath = path.join(__dirname, '../dist/index.html');
-    console.log('Loading production file from:', indexPath);
-    console.log('File exists:', fs.existsSync(indexPath));
-    win.loadFile(indexPath).catch(err => {
-      console.error('Failed to load index.html:', err);
-      win.webContents.openDevTools();
-    });
+    mainWindow.webContents.openDevTools();
   }
 
-  // Log any errors
-  win.webContents.on('did-fail-load', (event, errorCode, errorDescription) => {
-    console.error('Failed to load:', errorCode, errorDescription);
-  });
-
-  // Log when the page is ready
-  win.webContents.on('did-finish-load', () => {
-    console.log('Page loaded successfully');
-  });
-
-  // Log any console messages from the renderer
-  win.webContents.on('console-message', (event, level, message) => {
-    console.log('Renderer console:', message);
+  mainWindow.on('closed', () => {
+    mainWindow = null;
   });
 }
+
+function createMapWindow() {
+  mapWindow = new BrowserWindow({
+    width: 1000,
+    height: 800,
+    webPreferences: {
+      nodeIntegration: true,
+      contextIsolation: true,
+      preload: path.join(__dirname, 'preload.js')
+    }
+  });
+
+  mapWindow.loadURL(
+    isDev
+      ? 'http://localhost:5173/map.html'
+      : `file://${path.join(__dirname, '../dist/map.html')}`
+  );
+
+  if (isDev) {
+    mapWindow.webContents.openDevTools();
+  }
+
+  mapWindow.on('closed', () => {
+    mapWindow = null;
+  });
+}
+
+app.whenReady().then(createWindow);
+
+app.on('window-all-closed', () => {
+  if (process.platform !== 'darwin') {
+    app.quit();
+  }
+});
+
+app.on('activate', () => {
+  if (mainWindow === null) {
+    createWindow();
+  }
+});
 
 // Handle IPC calls
 ipcMain.handle('get-stations-data', () => {
@@ -93,21 +119,18 @@ ipcMain.handle('save-stations-data', async (event, data) => {
   }
 });
 
-app.whenReady().then(() => {
-  console.log('App is ready');
-  createWindow();
-});
-
-app.on('window-all-closed', () => {
-  console.log('All windows closed');
-  if (process.platform !== 'darwin') {
-    app.quit();
+// Handle opening map window
+ipcMain.handle('open-map-window', () => {
+  if (!mapWindow) {
+    createMapWindow();
+  } else {
+    mapWindow.focus();
   }
 });
 
-app.on('activate', () => {
-  console.log('App activated');
-  if (BrowserWindow.getAllWindows().length === 0) {
-    createWindow();
+// Handle adding station from map to main window
+ipcMain.handle('add-station-from-map', (event, station) => {
+  if (mainWindow) {
+    mainWindow.webContents.send('new-station-from-map', station);
   }
 }); 

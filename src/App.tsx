@@ -124,6 +124,19 @@ function App() {
     };
 
     loadStations();
+
+    // Listen for new stations from map
+    const handleNewStation = (_event: any, station: Station) => {
+      setItems(prev => [...prev, station]);
+      saveStations([...items, station]);
+    };
+
+    if (window.electron) {
+      window.electron.on('new-station-from-map', handleNewStation);
+      return () => {
+        window.electron?.off('new-station-from-map', handleNewStation);
+      };
+    }
   }, []);
 
   const saveStations = async (stations: Station[]) => {
@@ -237,13 +250,21 @@ url: ${station.url}${station.description ? `\ndescription: ${station.description
             <Typography variant="h4" component="h1">
               My Radio
             </Typography>
-            <Button
-              variant="contained"
-              startIcon={<AddIcon />}
-              onClick={() => handleOpenDialog()}
-            >
-              Add Station
-            </Button>
+            <Box sx={{ display: 'flex', gap: 2 }}>
+              <Button
+                variant="contained"
+                startIcon={<AddIcon />}
+                onClick={() => handleOpenDialog()}
+              >
+                Add Station
+              </Button>
+              <Button
+                variant="outlined"
+                onClick={() => window.electron?.openMapWindow()}
+              >
+                Discover Stations
+              </Button>
+            </Box>
           </Box>
 
           {error && (

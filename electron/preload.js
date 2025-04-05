@@ -14,6 +14,22 @@ contextBridge.exposeInMainWorld('electron', {
   saveStationsData: (data) => {
     console.log('saveStationsData called');
     return ipcRenderer.invoke('save-stations-data', data);
+  },
+  openMapWindow: () => {
+    console.log('openMapWindow called');
+    return ipcRenderer.invoke('open-map-window');
+  },
+  addStationFromMap: (station) => {
+    console.log('addStationFromMap called');
+    return ipcRenderer.invoke('add-station-from-map', station);
+  },
+  on: (channel, callback) => {
+    console.log('on called for channel:', channel);
+    ipcRenderer.on(channel, callback);
+  },
+  off: (channel, callback) => {
+    console.log('off called for channel:', channel);
+    ipcRenderer.removeListener(channel, callback);
   }
 });
 
