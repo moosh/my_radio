@@ -15,8 +15,9 @@ function getStationsPath() {
 
 function createWindow() {
   mainWindow = new BrowserWindow({
-    width: 1200,
+    width: 900,  // Matches Material-UI md breakpoint
     height: 800,
+    minWidth: 900,  // Prevent resizing below card width
     webPreferences: {
       nodeIntegration: true,
       contextIsolation: true,
