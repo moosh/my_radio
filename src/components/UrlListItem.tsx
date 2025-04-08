@@ -240,12 +240,12 @@ export function UrlListItem({ item, index, onDelete, onEdit, isPlaying, onPlayPa
                 borderColor: 'divider',
                 alignItems: 'center'
               }}>
-                {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, index) => {
+                {['Su', 'M', 'Tu', 'W', 'Th', 'F', 'Sa'].map((day, index) => {
                   const playCount = getPlayCount(index);
                   const opacity = getOpacity(playCount);
                   
                   return (
-                    <Box key={day} sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.5 }}>
+                    <Box key={`${day}-${index}`} sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.5 }}>
                       <Typography variant="caption" sx={{ fontSize: '0.7rem', color: 'text.secondary' }}>
                         {day}
                       </Typography>

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { DragDropContext, Droppable, DropResult } from 'react-beautiful-dnd';
 import { Container, Typography, Box, Button, Dialog, DialogTitle, DialogContent, DialogActions, TextField, ThemeProvider, createTheme } from '@mui/material';
 import { Add as AddIcon } from '@mui/icons-material';
@@ -6,6 +6,7 @@ import { UrlListItem } from './components/UrlListItem';
 import { parseStationsFile } from './utils/stationParser';
 import { DebugConsole } from './components/DebugConsole';
 import { Station, DayPlayStats } from './types/Station';
+import { PlayerStatus } from './components/PlayerStatus';
 
 // Create dark theme
 const darkTheme = createTheme({
@@ -81,6 +82,7 @@ function App() {
   const [error, setError] = useState<string | null>(null);
   const [currentlyPlayingId, setCurrentlyPlayingId] = useState<string | null>(null);
   const [showDebugConsole, setShowDebugConsole] = useState(false);
+  const audioRef = useRef<HTMLAudioElement>(null);
 
   // Add keyboard shortcut for toggling debug console
   useEffect(() => {
@@ -234,23 +236,54 @@ url: ${station.url}${station.description ? `\ndescription: ${station.description
     await saveStations(newItems);
   };
 
-  const handlePlayPause = (stationId: string) => {
-    setCurrentlyPlayingId(currentlyPlayingId === stationId ? null : stationId);
+  const handlePlayPause = async (stationId: string) => {
+    const station = items.find(item => item.id === stationId);
+    if (!station || !audioRef.current) return;
+
+    try {
+      if (currentlyPlayingId === stationId) {
+        // Stop playing
+        audioRef.current.pause();
+        setCurrentlyPlayingId(null);
+      } else {
+        // Start playing new station
+        if (currentlyPlayingId) {
+          // Stop current station first
+          audioRef.current.pause();
+        }
+        
+        audioRef.current.src = station.url;
+        await audioRef.current.play();
+        setCurrentlyPlayingId(stationId);
+
+        // Update play stats
+        const today = new Date().getDay(); // 0-6 for Sunday-Saturday
+        const existingStats = station.playStats || [];
+        const todayStats = existingStats.find(stat => stat.day === today);
+        
+        if (todayStats) {
+          todayStats.playCount += 1;
+          handleUpdatePlayStats(stationId, existingStats);
+        } else {
+          handleUpdatePlayStats(stationId, [...existingStats, { day: today, playCount: 1 }]);
+        }
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      addDebugMessage(`Error playing station: ${errorMessage}`);
+      setError(`Error playing station: ${errorMessage}`);
+    }
   };
 
   return (
     <ThemeProvider theme={darkTheme}>
-      <Box sx={{ 
-        minHeight: '100vh',
-        bgcolor: 'background.default',
-        color: 'text.primary'
-      }}>
-        <Container maxWidth="md" sx={{ py: 4 }}>
-          <Box sx={{ mb: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <Box sx={{ bgcolor: 'background.default', minHeight: '100vh', py: 4 }}>
+        <Container maxWidth="md">
+          <Box sx={{ mb: 4 }}>
             <Typography variant="h4" component="h1">
               My Radio
             </Typography>
-            <Box sx={{ display: 'flex', gap: 2 }}>
+            <Box sx={{ display: 'flex', gap: 2, mt: 2 }}>
               <Button
                 variant="contained"
                 startIcon={<AddIcon />}
@@ -272,6 +305,11 @@ url: ${station.url}${station.description ? `\ndescription: ${station.description
               <Typography>Error: {error}</Typography>
             </Box>
           )}
+
+          <PlayerStatus 
+            currentStation={items.find(item => item.id === currentlyPlayingId) || null}
+            audioElement={audioRef.current}
+          />
 
           <DragDropContext onDragEnd={handleDragEnd}>
             <Droppable droppableId="stations">
@@ -298,6 +336,8 @@ url: ${station.url}${station.description ? `\ndescription: ${station.description
               )}
             </Droppable>
           </DragDropContext>
+
+          <audio ref={audioRef} style={{ display: 'none' }} />
 
           <Dialog open={openDialog} onClose={handleCloseDialog}>
             <DialogTitle>
