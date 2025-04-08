@@ -24,6 +24,13 @@ export const PlayerStatus: React.FC<PlayerStatusProps> = ({
   onPlayPause 
 }) => {
   const [metadata, setMetadata] = useState<StreamMetadata>({});
+  const [lastPlayedStation, setLastPlayedStation] = useState<Station | null>(null);
+
+  useEffect(() => {
+    if (currentStation) {
+      setLastPlayedStation(currentStation);
+    }
+  }, [currentStation]);
 
   useEffect(() => {
     if (!audioElement) return;
@@ -71,12 +78,39 @@ export const PlayerStatus: React.FC<PlayerStatusProps> = ({
     };
   }, [audioElement]);
 
-  // Clear metadata when no station is playing
+  // Clear metadata when no station is playing but keep last played station
   useEffect(() => {
     if (!currentStation) {
       setMetadata({});
     }
   }, [currentStation]);
+
+  const displayStation = currentStation || lastPlayedStation;
+
+  if (!displayStation) {
+    return (
+      <Paper 
+        elevation={3}
+        sx={{
+          p: 2,
+          mb: 2,
+          backgroundColor: theme => 
+            theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.02)'
+        }}
+      >
+        <Box>
+          <Typography variant="h6" gutterBottom>
+            Ready to Play
+          </Typography>
+          <Typography variant="body1" color="text.secondary">
+            Select a station to start listening
+          </Typography>
+        </Box>
+      </Paper>
+    );
+  }
+
+  const isPlaying = currentStation?.id === displayStation.id;
 
   return (
     <Paper 
@@ -92,14 +126,11 @@ export const PlayerStatus: React.FC<PlayerStatusProps> = ({
         <Box sx={{ flex: 1 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <Typography variant="h6" gutterBottom>
-              {currentStation 
-                ? `Now Playing: ${currentStation.title}`
-                : 'Ready to Play'
-              }
+              {displayStation.title}
             </Typography>
-            {currentStation && onPlayPause && (
+            {onPlayPause && (
               <IconButton
-                onClick={() => onPlayPause(currentStation.id)}
+                onClick={() => onPlayPause(displayStation.id)}
                 size="small"
                 sx={{
                   color: 'primary.main',
@@ -107,7 +138,7 @@ export const PlayerStatus: React.FC<PlayerStatusProps> = ({
                   mb: 1
                 }}
               >
-                {audioElement?.paused ? (
+                {!isPlaying ? (
                   <PlayIcon sx={{ fontSize: 20 }} />
                 ) : (
                   <PauseIcon sx={{ fontSize: 20 }} />
@@ -116,33 +147,25 @@ export const PlayerStatus: React.FC<PlayerStatusProps> = ({
             )}
           </Box>
           
-          {currentStation ? (
-            <>
-              {metadata.artist || metadata.title ? (
-                <Typography variant="body1" color="text.secondary">
-                  {metadata.artist && `Artist: ${metadata.artist}`}
-                  {metadata.artist && metadata.title && ' • '}
-                  {metadata.title && `Title: ${metadata.title}`}
-                </Typography>
-              ) : (
-                <Typography variant="body1" color="text.secondary">
-                  {metadata.description || currentStation.description || 'No metadata available'}
-                </Typography>
-              )}
-
-              {(metadata.name || metadata.bitrate || metadata.genre) && (
-                <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 1 }}>
-                  {metadata.name && `Station: ${metadata.name}`}
-                  {metadata.name && (metadata.bitrate || metadata.genre) && ' • '}
-                  {metadata.bitrate && `Quality: ${metadata.bitrate}kbps`}
-                  {metadata.bitrate && metadata.genre && ' • '}
-                  {metadata.genre && `Genre: ${metadata.genre}`}
-                </Typography>
-              )}
-            </>
+          {isPlaying && (metadata.artist || metadata.title) ? (
+            <Typography variant="body1" color="text.secondary">
+              {metadata.artist && `Artist: ${metadata.artist}`}
+              {metadata.artist && metadata.title && ' • '}
+              {metadata.title && `Title: ${metadata.title}`}
+            </Typography>
           ) : (
             <Typography variant="body1" color="text.secondary">
-              Select a station to start listening
+              {displayStation.description || 'No description available'}
+            </Typography>
+          )}
+
+          {isPlaying && (metadata.name || metadata.bitrate || metadata.genre) && (
+            <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 1 }}>
+              {metadata.name && `Station: ${metadata.name}`}
+              {metadata.name && (metadata.bitrate || metadata.genre) && ' • '}
+              {metadata.bitrate && `Quality: ${metadata.bitrate}kbps`}
+              {metadata.bitrate && metadata.genre && ' • '}
+              {metadata.genre && `Genre: ${metadata.genre}`}
             </Typography>
           )}
         </Box>
