@@ -17,7 +17,7 @@ title: WHRB
 url: http://stream.whrb.org:8000/whrb-he-aac
 description: WHRB Harvard Radio
 tags: radio, college
-playstats: [{"day":2,"playCount":14}]
+playstats: [{"day":2,"playCount":16}]
 
 
 title: WRUV
@@ -42,10 +42,10 @@ playstats: [{"day":2,"playCount":4}]
 
 
 title: WOJB
-url: http://peridot.streamguys.com:7450/live
-description: WOJB Tribal Community Radio
-tags: radio, native american
-lastfailedat: 2025-04-08T15:42:03.654Z
+url: https://stream.pacificaservice.org:9000/wojb
+description: The United States Of America - english - 128kbps
+tags: local talk, talk
+playstats: [{"day":2,"playCount":2}]
 
 
 title: WORT
