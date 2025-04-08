@@ -281,6 +281,7 @@ url: ${station.url}${station.description ? `\ndescription: ${station.description
           // Now that audio is loaded, try to play it
           await audioRef.current.play();
           setCurrentlyPlayingId(stationId);
+          setError(null); // Clear any previous errors when playback starts successfully
           
           // Update play stats
           const today = new Date().getDay(); // 0-6 for Sunday-Saturday

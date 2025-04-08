@@ -146,9 +146,13 @@ ipcMain.handle('fetch-stream-metadata', async (event, url) => {
     const req = protocol.get(url, {
       headers: {
         'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
-        'Icy-MetaData': '1'
+        'Icy-MetaData': '1',  // Request metadata updates
+        'Accept': '*/*'
       }
     }, (res) => {
+      // Get the metadata interval
+      const metaInt = parseInt(res.headers['icy-metaint']);
+      
       // Parse technical info from ice-audio-info
       const audioInfo = res.headers['ice-audio-info'];
       const audioInfoParts = audioInfo ? Object.fromEntries(
@@ -163,17 +167,63 @@ ipcMain.handle('fetch-stream-metadata', async (event, url) => {
         genre: res.headers['icy-genre'],
         description: res.headers['icy-description'],
         url: res.headers['icy-url'],
-        currentSong: res.headers['icy-title'] || res.headers['icy-now-playing'],
+        currentSong: '',  // Will be updated from stream metadata
         format: res.headers['content-type'] || res.headers['icy-format'],
         channels: res.headers['ice-channels'] || audioInfoParts['ice-channels'],
         samplerate: audioInfoParts['ice-samplerate'],
         public: res.headers['icy-pub'],
         streamTitle: res.headers['icy-stream-title']
       };
-      
-      // Destroy the connection after getting headers
-      req.destroy();
-      resolve(metadata);
+
+      // If we have a metadata interval, set up metadata reading
+      if (metaInt) {
+        let buffer = Buffer.alloc(0);
+        let bytesRead = 0;
+
+        res.on('data', (chunk) => {
+          buffer = Buffer.concat([buffer, chunk]);
+          
+          while (buffer.length >= metaInt + 1) {
+            // Get the metadata length byte
+            const metaLength = buffer[metaInt] * 16;
+            
+            if (metaLength > 0 && buffer.length >= metaInt + 1 + metaLength) {
+              // Extract metadata
+              const metaData = buffer.slice(metaInt + 1, metaInt + 1 + metaLength).toString();
+              
+              // Parse StreamTitle
+              const titleMatch = metaData.match(/StreamTitle='([^']*)'/);
+              if (titleMatch) {
+                metadata.currentSong = titleMatch[1];
+                // Send metadata update to renderer
+                if (mainWindow) {
+                  mainWindow.webContents.send('metadata-update', metadata);
+                }
+              }
+            }
+            
+            // Remove processed data from buffer
+            buffer = buffer.slice(metaInt + 1 + (metaLength || 0));
+          }
+        });
+
+        // Start reading a small amount of data to get initial metadata
+        res.once('readable', () => {
+          const chunk = res.read(metaInt * 2);
+          if (chunk) {
+            buffer = chunk;
+          }
+          // Destroy the connection after getting initial metadata
+          setTimeout(() => {
+            req.destroy();
+            resolve(metadata);
+          }, 1000);
+        });
+      } else {
+        // No metadata interval, just return headers
+        req.destroy();
+        resolve(metadata);
+      }
     });
 
     req.on('error', (error) => {

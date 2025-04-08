@@ -73,6 +73,17 @@ export const PlayerStatus: React.FC<PlayerStatusProps> = ({
       }
     };
 
+    // Handle metadata updates from main process
+    const handleMetadataUpdate = (_event: any, newMetadata: StreamMetadata) => {
+      setMetadata(prev => ({
+        ...prev,
+        ...newMetadata
+      }));
+    };
+
+    // Listen for metadata updates from main process
+    window.electron?.on('metadata-update', handleMetadataUpdate);
+
     audioElement.addEventListener('loadedmetadata', handleMetadata);
     audioElement.addEventListener('play', fetchIcyMetadata);
 
@@ -82,8 +93,23 @@ export const PlayerStatus: React.FC<PlayerStatusProps> = ({
     return () => {
       audioElement.removeEventListener('loadedmetadata', handleMetadata);
       audioElement.removeEventListener('play', fetchIcyMetadata);
+      window.electron?.off('metadata-update', handleMetadataUpdate);
     };
   }, [audioElement]);
+
+  // Parse current song into artist and title if possible
+  useEffect(() => {
+    if (metadata.currentSong) {
+      const parts = metadata.currentSong.split(' - ');
+      if (parts.length === 2) {
+        setMetadata(prev => ({
+          ...prev,
+          artist: parts[0].trim(),
+          title: parts[1].trim()
+        }));
+      }
+    }
+  }, [metadata.currentSong]);
 
   // Clear metadata when no station is playing but keep last played station
   useEffect(() => {
