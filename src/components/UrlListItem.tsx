@@ -1,8 +1,8 @@
 import { Draggable } from 'react-beautiful-dnd';
 import { Card, CardContent, Typography, Box, IconButton, CircularProgress, Tooltip, Dialog, DialogTitle, DialogContent, DialogActions, Button, List, ListItem, ListItemText, ListItemSecondaryAction } from '@mui/material';
 import { Delete as DeleteIcon, Edit as EditIcon, DragIndicator as DragIndicatorIcon, PlayArrow as PlayIcon, Pause as PauseIcon, ErrorOutline as ErrorIcon, Refresh as RefreshIcon } from '@mui/icons-material';
-import { Station, DayPlayStats } from '../types/Station';
-import { useEffect, useRef, useState } from 'react';
+import { Station } from '../types/Station';
+import { useState } from 'react';
 import { alpha } from '@mui/material/styles';
 
 interface RadioBrowserStation {
@@ -25,11 +25,10 @@ interface UrlListItemProps {
   onEdit: (item: Station) => void;
   isPlaying: boolean;
   onPlayPause: (stationId: string) => void;
-  onUpdatePlayStats: (stationId: string, playStats: DayPlayStats[]) => void;
+  onUpdatePlayStats: (stationId: string, playStats: any[]) => void;
 }
 
-export function UrlListItem({ item, index, onDelete, onEdit, isPlaying, onPlayPause, onUpdatePlayStats }: UrlListItemProps) {
-  const [isLoading, setIsLoading] = useState(false);
+export function UrlListItem({ item, index, onDelete, onEdit, isPlaying, onPlayPause }: UrlListItemProps) {
   const [showAlternatives, setShowAlternatives] = useState(false);
   const [alternativeStations, setAlternativeStations] = useState<RadioBrowserStation[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
@@ -159,7 +158,6 @@ export function UrlListItem({ item, index, onDelete, onEdit, isPlaying, onPlayPa
                 <IconButton 
                   size="small" 
                   onClick={handlePlayPause}
-                  disabled={isLoading}
                   sx={{ 
                     color: isPlaying ? 'primary.main' : 'text.secondary',
                     position: 'relative',
@@ -168,15 +166,7 @@ export function UrlListItem({ item, index, onDelete, onEdit, isPlaying, onPlayPa
                     height: 24
                   }}
                 >
-                  {isLoading ? (
-                    <CircularProgress 
-                      size={16} 
-                      sx={{ 
-                        position: 'absolute',
-                        color: 'primary.main'
-                      }}
-                    />
-                  ) : isPlaying ? (
+                  {isPlaying ? (
                     <PauseIcon sx={{ fontSize: 16 }} />
                   ) : (
                     <PlayIcon sx={{ fontSize: 16 }} />
