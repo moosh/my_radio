@@ -30,21 +30,21 @@ export function VectorArt() {
     window.addEventListener('resize', updateSize);
 
     // Initialize points
-    const numPoints = 15;
+    const numPoints = 30;
     pointsRef.current = Array.from({ length: numPoints }, () => ({
       x: Math.random() * canvas.offsetWidth,
       y: Math.random() * canvas.offsetHeight,
-      vx: (Math.random() - 0.5) * 0.5,
-      vy: (Math.random() - 0.5) * 0.5,
-      radius: Math.random() * 2 + 1
+      vx: (Math.random() - 0.5) * 0.3,
+      vy: (Math.random() - 0.5) * 0.3,
+      radius: Math.random() * 1.5 + 0.5
     }));
 
     // Animation function
     const animate = () => {
       if (!canvas || !ctx) return;
 
-      // Clear canvas
-      ctx.fillStyle = 'rgba(18, 18, 18, 1)';
+      // Clear canvas with slight fade effect
+      ctx.fillStyle = 'rgba(18, 18, 18, 0.1)';
       ctx.fillRect(0, 0, canvas.offsetWidth, canvas.offsetHeight);
 
       // Update and draw points
@@ -53,9 +53,23 @@ export function VectorArt() {
         point.x += point.vx;
         point.y += point.vy;
 
-        // Bounce off walls
-        if (point.x < 0 || point.x > canvas.offsetWidth) point.vx *= -1;
-        if (point.y < 0 || point.y > canvas.offsetHeight) point.vy *= -1;
+        // Bounce off walls with slight randomization
+        if (point.x < 0 || point.x > canvas.offsetWidth) {
+          point.vx *= -1;
+          point.vx += (Math.random() - 0.5) * 0.1;
+        }
+        if (point.y < 0 || point.y > canvas.offsetHeight) {
+          point.vy *= -1;
+          point.vy += (Math.random() - 0.5) * 0.1;
+        }
+
+        // Keep speed within bounds
+        const maxSpeed = 0.5;
+        const speed = Math.hypot(point.vx, point.vy);
+        if (speed > maxSpeed) {
+          point.vx = (point.vx / speed) * maxSpeed;
+          point.vy = (point.vy / speed) * maxSpeed;
+        }
 
         // Draw point
         ctx.beginPath();
@@ -64,19 +78,23 @@ export function VectorArt() {
         ctx.fill();
       });
 
-      // Draw connections
+      // Draw connections with distance-based opacity
       ctx.beginPath();
       pointsRef.current.forEach((point, i) => {
         pointsRef.current.slice(i + 1).forEach(otherPoint => {
           const distance = Math.hypot(point.x - otherPoint.x, point.y - otherPoint.y);
-          if (distance < 100) {
+          const maxDistance = 120;
+          if (distance < maxDistance) {
+            // Opacity based on distance
+            const opacity = 0.2 * (1 - distance / maxDistance);
+            ctx.beginPath();
             ctx.moveTo(point.x, point.y);
             ctx.lineTo(otherPoint.x, otherPoint.y);
+            ctx.strokeStyle = `rgba(144, 202, 249, ${opacity})`;
+            ctx.stroke();
           }
         });
       });
-      ctx.strokeStyle = 'rgba(144, 202, 249, 0.2)';
-      ctx.stroke();
 
       animationFrameRef.current = requestAnimationFrame(animate);
     };
