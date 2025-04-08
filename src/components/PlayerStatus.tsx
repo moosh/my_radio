@@ -16,6 +16,13 @@ interface StreamMetadata {
   bitrate?: string;
   genre?: string;
   description?: string;
+  url?: string;
+  currentSong?: string;
+  format?: string;
+  channels?: string;
+  samplerate?: string;
+  public?: string;
+  streamTitle?: string;
 }
 
 export const PlayerStatus: React.FC<PlayerStatusProps> = ({ 
@@ -147,11 +154,19 @@ export const PlayerStatus: React.FC<PlayerStatusProps> = ({
             )}
           </Box>
           
-          {isPlaying && (metadata.artist || metadata.title) ? (
+          {isPlaying && (metadata.artist || metadata.title || metadata.currentSong || metadata.streamTitle) ? (
             <Typography variant="body1" color="text.secondary">
-              {metadata.artist && `Artist: ${metadata.artist}`}
-              {metadata.artist && metadata.title && ' • '}
-              {metadata.title && `Title: ${metadata.title}`}
+              {metadata.artist && metadata.title ? (
+                <>
+                  {`${metadata.artist} - ${metadata.title}`}
+                </>
+              ) : metadata.currentSong ? (
+                metadata.currentSong
+              ) : metadata.streamTitle ? (
+                metadata.streamTitle
+              ) : (
+                displayStation.description || 'No description available'
+              )}
             </Typography>
           ) : (
             <Typography variant="body1" color="text.secondary">
@@ -159,13 +174,34 @@ export const PlayerStatus: React.FC<PlayerStatusProps> = ({
             </Typography>
           )}
 
-          {isPlaying && (metadata.name || metadata.bitrate || metadata.genre) && (
+          {isPlaying && (metadata.name || metadata.bitrate || metadata.genre || metadata.format) && (
             <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 1 }}>
               {metadata.name && `Station: ${metadata.name}`}
-              {metadata.name && (metadata.bitrate || metadata.genre) && ' • '}
-              {metadata.bitrate && `Quality: ${metadata.bitrate}kbps`}
-              {metadata.bitrate && metadata.genre && ' • '}
+              {metadata.name && (metadata.bitrate || metadata.genre || metadata.format) && ' • '}
+              {metadata.bitrate && `${metadata.bitrate}kbps`}
+              {metadata.bitrate && (metadata.format || metadata.genre) && ' • '}
+              {metadata.format && `${metadata.format.split('/')[1]?.toUpperCase() || metadata.format}`}
+              {metadata.format && metadata.genre && ' • '}
               {metadata.genre && `Genre: ${metadata.genre}`}
+            </Typography>
+          )}
+
+          {isPlaying && (metadata.channels || metadata.samplerate || metadata.url) && (
+            <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 0.5 }}>
+              {metadata.channels && `${metadata.channels}ch`}
+              {metadata.channels && metadata.samplerate && ' • '}
+              {metadata.samplerate && `${metadata.samplerate}Hz`}
+              {(metadata.channels || metadata.samplerate) && metadata.url && ' • '}
+              {metadata.url && (
+                <a 
+                  href={metadata.url} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  style={{ color: 'inherit', textDecoration: 'underline' }}
+                >
+                  Station Website
+                </a>
+              )}
             </Typography>
           )}
         </Box>

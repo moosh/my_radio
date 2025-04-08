@@ -149,11 +149,26 @@ ipcMain.handle('fetch-stream-metadata', async (event, url) => {
         'Icy-MetaData': '1'
       }
     }, (res) => {
+      // Parse technical info from ice-audio-info
+      const audioInfo = res.headers['ice-audio-info'];
+      const audioInfoParts = audioInfo ? Object.fromEntries(
+        audioInfo.split(';')
+          .map(part => part.trim().split('='))
+          .filter(([key]) => ['ice-samplerate', 'ice-bitrate', 'ice-channels'].includes(key))
+      ) : {};
+
       const metadata = {
         name: res.headers['icy-name'],
-        bitrate: res.headers['icy-br'],
+        bitrate: res.headers['icy-br'] || audioInfoParts['ice-bitrate'],
         genre: res.headers['icy-genre'],
-        description: res.headers['icy-description']
+        description: res.headers['icy-description'],
+        url: res.headers['icy-url'],
+        currentSong: res.headers['icy-title'] || res.headers['icy-now-playing'],
+        format: res.headers['content-type'] || res.headers['icy-format'],
+        channels: res.headers['ice-channels'] || audioInfoParts['ice-channels'],
+        samplerate: audioInfoParts['ice-samplerate'],
+        public: res.headers['icy-pub'],
+        streamTitle: res.headers['icy-stream-title']
       };
       
       // Destroy the connection after getting headers
