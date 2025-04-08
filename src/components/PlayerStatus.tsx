@@ -43,17 +43,14 @@ export const PlayerStatus: React.FC<PlayerStatusProps> = ({
     if (!audioElement) return;
 
     const handleMetadata = (e: Event) => {
-      const audio = e.target as HTMLAudioElement;
-      
-      // Try to get metadata from MediaSession API
-      if ('mediaSession' in navigator && navigator.mediaSession.metadata) {
-        const { title, artist } = navigator.mediaSession.metadata;
-        setMetadata(prev => ({
-          ...prev,
-          title: title || prev.title,
-          artist: artist || prev.artist
-        }));
-      }
+      // No need to store audio in a variable if we're not using it
+      const target = e.target as HTMLAudioElement;
+      setMetadata({
+        name: target.dataset.icyName,
+        bitrate: target.dataset.icyBr,
+        genre: target.dataset.icyGenre,
+        description: target.dataset.icyDescription
+      });
     };
 
     // Function to fetch ICY metadata using IPC
@@ -120,6 +117,15 @@ export const PlayerStatus: React.FC<PlayerStatusProps> = ({
 
   const displayStation = currentStation || lastPlayedStation;
 
+  // Handle play/pause button click
+  const handlePlayPauseClick = () => {
+    if (!displayStation || !onPlayPause) return;
+    
+    // If this station is currently playing, pause it
+    // If it's not playing, it will automatically stop any other playing station
+    onPlayPause(displayStation.id);
+  };
+
   if (!displayStation) {
     return (
       <Paper 
@@ -163,7 +169,7 @@ export const PlayerStatus: React.FC<PlayerStatusProps> = ({
             </Typography>
             {onPlayPause && (
               <IconButton
-                onClick={() => onPlayPause(displayStation.id)}
+                onClick={handlePlayPauseClick}
                 size="small"
                 sx={{
                   color: 'primary.main',

@@ -29,63 +29,10 @@ interface UrlListItemProps {
 }
 
 export function UrlListItem({ item, index, onDelete, onEdit, isPlaying, onPlayPause, onUpdatePlayStats }: UrlListItemProps) {
-  const audioRef = useRef<HTMLAudioElement | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [showAlternatives, setShowAlternatives] = useState(false);
   const [alternativeStations, setAlternativeStations] = useState<RadioBrowserStation[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
-
-  // Function to parse M3U file and get the actual stream URL
-  const parseM3UFile = async (url: string): Promise<string | null> => {
-    try {
-      const response = await fetch(url);
-      const text = await response.text();
-      const lines = text.split('\n');
-      
-      // Find the first non-empty line that doesn't start with # (which is the actual stream URL)
-      const streamLine = lines.find(line => line.trim() && !line.trim().startsWith('#'));
-      return streamLine ? streamLine.trim() : null;
-    } catch (error) {
-      console.error('Error parsing M3U file:', error);
-      return null;
-    }
-  };
-
-  // Function to get play count for a specific day
-  const getPlayCount = (dayIndex: number) => {
-    return item.playStats?.find(stat => stat.day === dayIndex)?.playCount || 0;
-  };
-
-  // Function to calculate opacity based on play count using logarithmic scale
-  const getOpacity = (playCount: number) => {
-    const maxOpacity = 0.9; // Maximum opacity
-    const baseOpacity = 0.1; // Starting opacity for 1 play
-    const maxPlays = 100; // Number of plays for max opacity
-    
-    if (playCount === 0) return 0;
-    
-    // Use logarithmic scale for smoother progression
-    const logScale = Math.log10(playCount + 1) / Math.log10(maxPlays + 1);
-    return Math.min(baseOpacity + (maxOpacity - baseOpacity) * logScale, maxOpacity);
-  };
-
-  // Function to update play count for current day
-  const updatePlayCount = () => {
-    const today = new Date().getDay();
-    const currentPlayStats = item.playStats || [];
-    const existingStat = currentPlayStats.find(stat => stat.day === today);
-    
-    let newPlayStats: DayPlayStats[];
-    if (existingStat) {
-      newPlayStats = currentPlayStats.map(stat =>
-        stat.day === today ? { ...stat, playCount: stat.playCount + 1 } : stat
-      );
-    } else {
-      newPlayStats = [...currentPlayStats, { day: today, playCount: 1 }];
-    }
-    
-    onUpdatePlayStats(item.id, newPlayStats);
-  };
 
   // Function to search for alternative stations
   const searchAlternativeStations = async () => {
@@ -139,80 +86,6 @@ export function UrlListItem({ item, index, onDelete, onEdit, isPlaying, onPlayPa
     });
     setShowAlternatives(false);
   };
-
-  // Handle play/pause and audio element lifecycle
-  useEffect(() => {
-    const setupAudio = async () => {
-      if (isPlaying) {
-        try {
-          let finalUrl = item.url;
-          
-          // If URL ends with .m3u, parse it to get the actual stream URL
-          if (item.url.toLowerCase().endsWith('.m3u')) {
-            setIsLoading(true);
-            const parsedUrl = await parseM3UFile(item.url);
-            if (!parsedUrl) {
-              throw new Error('Could not parse M3U file');
-            }
-            finalUrl = parsedUrl;
-          }
-
-          if (!audioRef.current) {
-            console.log(`Creating new audio element for ${item.title}`);
-            audioRef.current = new Audio(finalUrl);
-            
-            audioRef.current.addEventListener('error', (e) => {
-              console.error(`Audio error for ${item.url}:`, e);
-              setIsLoading(false);
-            });
-            
-            audioRef.current.addEventListener('canplaythrough', () => {
-              console.log(`Audio ready to play for ${item.title}`);
-              setIsLoading(false);
-              // Update play count when playback starts successfully
-              updatePlayCount();
-            });
-          }
-
-          console.log(`Starting playback for ${item.title}`);
-          setIsLoading(true);
-          const playPromise = audioRef.current.play();
-          if (playPromise !== undefined) {
-            playPromise
-              .then(() => {
-                console.log(`Successfully started playing ${item.title}`);
-                setIsLoading(false);
-              })
-              .catch(error => {
-                console.error(`Error playing ${item.url}:`, error);
-                setIsLoading(false);
-              });
-          }
-        } catch (error) {
-          console.error(`Error setting up audio for ${item.url}:`, error);
-          setIsLoading(false);
-        }
-      } else {
-        if (audioRef.current) {
-          console.log(`Stopping and cleaning up audio for ${item.title}`);
-          audioRef.current.pause();
-          audioRef.current = null;
-          setIsLoading(false);
-        }
-      }
-    };
-
-    setupAudio();
-
-    return () => {
-      if (audioRef.current) {
-        console.log(`Component unmounting, cleaning up audio for ${item.title}`);
-        audioRef.current.pause();
-        audioRef.current = null;
-        setIsLoading(false);
-      }
-    };
-  }, [isPlaying, item.url, item.title]);
 
   const handlePlayPause = () => {
     console.log(`Play/Pause button clicked for ${item.title}`);
@@ -337,8 +210,9 @@ export function UrlListItem({ item, index, onDelete, onEdit, isPlaying, onPlayPa
                   alignItems: 'center'
                 }}>
                   {['Su', 'M', 'Tu', 'W', 'Th', 'F', 'Sa'].map((day, index) => {
-                    const playCount = getPlayCount(index);
-                    const opacity = getOpacity(playCount);
+                    const playCount = item.playStats?.find(stat => stat.day === index)?.playCount || 0;
+                    // Calculate opacity using logarithmic scale
+                    const opacity = playCount === 0 ? 0 : Math.min(0.1 + (0.8 * Math.log10(playCount + 1) / Math.log10(100)), 0.9);
                     
                     return (
                       <Box key={`${day}-${index}`} sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.5 }}>

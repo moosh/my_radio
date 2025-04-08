@@ -241,88 +241,89 @@ url: ${station.url}${station.description ? `\ndescription: ${station.description
     if (!station || !audioRef.current) return;
 
     try {
+      // If this station is currently playing, stop it
       if (currentlyPlayingId === stationId) {
-        // Stop playing
         audioRef.current.pause();
+        audioRef.current.src = ''; // Clear the source
         setCurrentlyPlayingId(null);
-      } else {
-        // Start playing new station
-        if (currentlyPlayingId) {
-          // Stop current station first and clear the source
-          audioRef.current.pause();
-          audioRef.current.src = '';
-          setCurrentlyPlayingId(null);
-        }
-        
-        // Set new source
-        audioRef.current.src = station.url;
-        
-        try {
-          // Wait for the audio to be loaded before playing
-          await new Promise((resolve, reject) => {
-            if (!audioRef.current) return reject(new Error('No audio element'));
-            
-            const handleCanPlay = () => {
-              audioRef.current?.removeEventListener('canplay', handleCanPlay);
-              audioRef.current?.removeEventListener('error', handleError);
-              resolve(null);
-            };
-            
-            const handleError = (e: Event) => {
-              audioRef.current?.removeEventListener('canplay', handleCanPlay);
-              audioRef.current?.removeEventListener('error', handleError);
-              reject(new Error('Failed to load audio'));
-            };
+        return;
+      }
 
-            audioRef.current.addEventListener('canplay', handleCanPlay);
-            audioRef.current.addEventListener('error', handleError);
-          });
+      // Stop any currently playing station
+      if (currentlyPlayingId) {
+        audioRef.current.pause();
+        audioRef.current.src = '';
+        setCurrentlyPlayingId(null);
+      }
+      
+      // Set new source
+      audioRef.current.src = station.url;
+      
+      try {
+        // Wait for the audio to be loaded before playing
+        await new Promise((resolve, reject) => {
+          if (!audioRef.current) return reject(new Error('No audio element'));
+          
+          const handleCanPlay = () => {
+            audioRef.current?.removeEventListener('canplay', handleCanPlay);
+            audioRef.current?.removeEventListener('error', handleError);
+            resolve(null);
+          };
+          
+          const handleError = (_: Event) => {
+            audioRef.current?.removeEventListener('canplay', handleCanPlay);
+            audioRef.current?.removeEventListener('error', handleError);
+            reject(new Error('Failed to load audio'));
+          };
 
-          // Now that audio is loaded, try to play it
-          await audioRef.current.play();
-          setCurrentlyPlayingId(stationId);
-          setError(null); // Clear any previous errors when playback starts successfully
-          
-          // Clear failed state if it was previously failed
-          if (station.lastFailedAt) {
-            const updatedItems = items.map(item => 
-              item.id === stationId 
-                ? { ...item, lastFailedAt: undefined }
-                : item
-            );
-            setItems(updatedItems);
-            await saveStations(updatedItems);
-          }
-          
-          // Update play stats
-          const today = new Date().getDay(); // 0-6 for Sunday-Saturday
-          const existingStats = station.playStats || [];
-          const todayStats = existingStats.find(stat => stat.day === today);
-          
-          if (todayStats) {
-            todayStats.playCount += 1;
-            handleUpdatePlayStats(stationId, existingStats);
-          } else {
-            handleUpdatePlayStats(stationId, [...existingStats, { day: today, playCount: 1 }]);
-          }
-        } catch (error) {
-          // Clean up if play fails
-          if (audioRef.current) {
-            audioRef.current.src = '';
-          }
-          setCurrentlyPlayingId(null);
-          
-          // Mark station as failed
+          audioRef.current.addEventListener('canplay', handleCanPlay);
+          audioRef.current.addEventListener('error', handleError);
+        });
+
+        // Now that audio is loaded, try to play it
+        await audioRef.current.play();
+        setCurrentlyPlayingId(stationId);
+        setError(null); // Clear any previous errors when playback starts successfully
+        
+        // Clear failed state if it was previously failed
+        if (station.lastFailedAt) {
           const updatedItems = items.map(item => 
             item.id === stationId 
-              ? { ...item, lastFailedAt: new Date() }
+              ? { ...item, lastFailedAt: undefined }
               : item
           );
           setItems(updatedItems);
           await saveStations(updatedItems);
-          
-          throw error;
         }
+        
+        // Update play stats
+        const today = new Date().getDay(); // 0-6 for Sunday-Saturday
+        const existingStats = station.playStats || [];
+        const todayStats = existingStats.find(stat => stat.day === today);
+        
+        if (todayStats) {
+          todayStats.playCount += 1;
+          handleUpdatePlayStats(stationId, existingStats);
+        } else {
+          handleUpdatePlayStats(stationId, [...existingStats, { day: today, playCount: 1 }]);
+        }
+      } catch (error) {
+        // Clean up if play fails
+        if (audioRef.current) {
+          audioRef.current.src = '';
+        }
+        setCurrentlyPlayingId(null);
+        
+        // Mark station as failed
+        const updatedItems = items.map(item => 
+          item.id === stationId 
+            ? { ...item, lastFailedAt: new Date() }
+            : item
+        );
+        setItems(updatedItems);
+        await saveStations(updatedItems);
+        
+        throw error;
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);

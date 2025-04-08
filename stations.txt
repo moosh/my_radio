@@ -3,28 +3,28 @@ title: RFA
 url: https://s2.voscast.com:12579/stream
 description: Radio Free Amsterdam
 tags: radio, freeform
-playstats: [{"day":2,"playCount":10}]
+playstats: [{"day":2,"playCount":17}]
 
 
 title: WFMU
 url: http://stream0.wfmu.org/freeform-high.aac
 description: WFMU Freeform Radio
 tags: radio, freeform, music
-playstats: [{"day":2,"playCount":16}]
+playstats: [{"day":2,"playCount":19}]
 
 
 title: WHRB
 url: http://stream.whrb.org:8000/whrb-he-aac
 description: WHRB Harvard Radio
 tags: radio, college
-playstats: [{"day":2,"playCount":16}]
+playstats: [{"day":2,"playCount":18}]
 
 
 title: WRUV
 url: http://icecast.uvm.edu:8005/wruv_fm_256
 description: WRUV University of Vermont
 tags: radio, college
-playstats: [{"day":2,"playCount":5}]
+playstats: [{"day":2,"playCount":8}]
 
 
 title: Radio Relativa Madrid
@@ -38,14 +38,14 @@ title: WWOZ
 url: https://wwoz-sc.streamguys1.com/wwoz-hi.mp3
 description: WWOZ New Orleans Jazz & Heritage Station
 tags: radio, jazz, new orleans
-playstats: [{"day":2,"playCount":4}]
+playstats: [{"day":2,"playCount":5}]
 
 
 title: WOJB
 url: https://stream.pacificaservice.org:9000/wojb
 description: The United States Of America - english - 128kbps
 tags: local talk, talk
-playstats: [{"day":2,"playCount":2}]
+playstats: [{"day":2,"playCount":4}]
 
 
 title: WORT
