@@ -3,21 +3,21 @@ title: RFA
 url: https://s2.voscast.com:12579/stream
 description: Radio Free America
 tags: radio, freeform
-playstats: [{"day":2,"playCount":8}]
+playstats: [{"day":2,"playCount":11}]
 
 
 title: WFMU
 url: http://stream0.wfmu.org/freeform-high.aac
 description: WFMU Freeform Radio
 tags: radio, freeform, music
-playstats: [{"day":2,"playCount":9}]
+playstats: [{"day":2,"playCount":10}]
 
 
 title: WHRB
 url: http://stream.whrb.org:8000/whrb-he-aac
 description: WHRB Harvard Radio
 tags: radio, college
-playstats: [{"day":2,"playCount":4}]
+playstats: [{"day":2,"playCount":6}]
 
 
 title: WRUV
@@ -31,6 +31,7 @@ title: Radio Relativa Madrid
 url: https://streamer.radio.co/sd6131729c/listen
 description: Radio Relativa Madrid
 tags: radio, music
+playstats: [{"day":2,"playCount":2}]
 
 
 title: WWOZ

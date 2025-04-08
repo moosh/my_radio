@@ -343,6 +343,7 @@ url: ${station.url}${station.description ? `\ndescription: ${station.description
           <PlayerStatus 
             currentStation={items.find(item => item.id === currentlyPlayingId) || null}
             audioElement={audioRef.current}
+            onPlayPause={handlePlayPause}
           />
 
           <DragDropContext onDragEnd={handleDragEnd}>
