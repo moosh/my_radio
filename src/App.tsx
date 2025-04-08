@@ -7,6 +7,7 @@ import { parseStationsFile } from './utils/stationParser';
 import { DebugConsole } from './components/DebugConsole';
 import { Station, DayPlayStats } from './types/Station';
 import { PlayerStatus } from './components/PlayerStatus';
+import { VectorArt } from './components/VectorArt';
 
 // Create dark theme
 const darkTheme = createTheme({
@@ -336,11 +337,14 @@ url: ${station.url}${station.description ? `\ndescription: ${station.description
     <ThemeProvider theme={darkTheme}>
       <Box sx={{ bgcolor: 'background.default', minHeight: '100vh', py: 4 }}>
         <Container maxWidth="md">
-          <Box sx={{ mb: 4 }}>
-            <Typography variant="h4" component="h1">
-              My Radio
-            </Typography>
-            <Box sx={{ display: 'flex', gap: 2, mt: 2 }}>
+          <Box sx={{ 
+            mb: 4,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 4,
+            height: '100px'
+          }}>
+            <Box sx={{ display: 'flex', gap: 2 }}>
               <Button
                 variant="contained"
                 startIcon={<AddIcon />}
@@ -354,6 +358,15 @@ url: ${station.url}${station.description ? `\ndescription: ${station.description
               >
                 Discover Stations
               </Button>
+            </Box>
+            <Box sx={{ 
+              flex: 1,
+              height: '100%',
+              bgcolor: 'background.paper',
+              borderRadius: 1,
+              overflow: 'hidden'
+            }}>
+              <VectorArt />
             </Box>
           </Box>
 
