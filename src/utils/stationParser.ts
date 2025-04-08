@@ -48,7 +48,8 @@ export async function parseStationsFile({ log = defaultLog }: ParseOptions = {})
           stations.push({
             ...currentStation,
             id: crypto.randomUUID(),
-            createdAt: new Date()
+            createdAt: new Date(),
+            lastFailedAt: currentStation.lastFailedAt ? new Date(currentStation.lastFailedAt) : undefined
           } as Station);
           currentStation = {};
         }
@@ -65,7 +66,8 @@ export async function parseStationsFile({ log = defaultLog }: ParseOptions = {})
             stations.push({
               ...currentStation,
               id: crypto.randomUUID(),
-              createdAt: new Date()
+              createdAt: new Date(),
+              lastFailedAt: currentStation.lastFailedAt ? new Date(currentStation.lastFailedAt) : undefined
             } as Station);
             currentStation = {};
           }
@@ -87,6 +89,13 @@ export async function parseStationsFile({ log = defaultLog }: ParseOptions = {})
             log(`Error parsing play stats for station ${currentStation.title}: ${error}`);
           }
           break;
+        case 'lastfailedat':
+          try {
+            currentStation.lastFailedAt = new Date(value);
+          } catch (error) {
+            log(`Error parsing lastFailedAt for station ${currentStation.title}: ${error}`);
+          }
+          break;
         default:
           log(`Unknown key in stations file: ${key}`);
       }
@@ -97,7 +106,8 @@ export async function parseStationsFile({ log = defaultLog }: ParseOptions = {})
       stations.push({
         ...currentStation,
         id: crypto.randomUUID(),
-        createdAt: new Date()
+        createdAt: new Date(),
+        lastFailedAt: currentStation.lastFailedAt ? new Date(currentStation.lastFailedAt) : undefined
       } as Station);
     }
 

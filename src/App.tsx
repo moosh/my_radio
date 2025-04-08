@@ -146,7 +146,7 @@ function App() {
       addDebugMessage('Saving stations...');
       const stationsText = stations.map(station => `
 title: ${station.title}
-url: ${station.url}${station.description ? `\ndescription: ${station.description}` : ''}${station.tags && station.tags.length > 0 ? `\ntags: ${station.tags.join(', ')}` : ''}${station.playStats && station.playStats.length > 0 ? `\nplaystats: ${JSON.stringify(station.playStats)}` : ''}
+url: ${station.url}${station.description ? `\ndescription: ${station.description}` : ''}${station.tags && station.tags.length > 0 ? `\ntags: ${station.tags.join(', ')}` : ''}${station.playStats && station.playStats.length > 0 ? `\nplaystats: ${JSON.stringify(station.playStats)}` : ''}${station.lastFailedAt ? `\nlastfailedat: ${station.lastFailedAt.toISOString()}` : ''}
 `).join('\n');
 
       if (window.electron) {
@@ -283,6 +283,17 @@ url: ${station.url}${station.description ? `\ndescription: ${station.description
           setCurrentlyPlayingId(stationId);
           setError(null); // Clear any previous errors when playback starts successfully
           
+          // Clear failed state if it was previously failed
+          if (station.lastFailedAt) {
+            const updatedItems = items.map(item => 
+              item.id === stationId 
+                ? { ...item, lastFailedAt: undefined }
+                : item
+            );
+            setItems(updatedItems);
+            await saveStations(updatedItems);
+          }
+          
           // Update play stats
           const today = new Date().getDay(); // 0-6 for Sunday-Saturday
           const existingStats = station.playStats || [];
@@ -300,6 +311,16 @@ url: ${station.url}${station.description ? `\ndescription: ${station.description
             audioRef.current.src = '';
           }
           setCurrentlyPlayingId(null);
+          
+          // Mark station as failed
+          const updatedItems = items.map(item => 
+            item.id === stationId 
+              ? { ...item, lastFailedAt: new Date() }
+              : item
+          );
+          setItems(updatedItems);
+          await saveStations(updatedItems);
+          
           throw error;
         }
       }

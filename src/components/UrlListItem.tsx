@@ -1,8 +1,9 @@
 import { Draggable } from 'react-beautiful-dnd';
 import { Card, CardContent, Typography, Box, IconButton, CircularProgress, Tooltip } from '@mui/material';
-import { Delete as DeleteIcon, Edit as EditIcon, DragIndicator as DragIndicatorIcon, PlayArrow as PlayIcon, Pause as PauseIcon } from '@mui/icons-material';
+import { Delete as DeleteIcon, Edit as EditIcon, DragIndicator as DragIndicatorIcon, PlayArrow as PlayIcon, Pause as PauseIcon, ErrorOutline as ErrorIcon } from '@mui/icons-material';
 import { Station, DayPlayStats } from '../types/Station';
 import { useEffect, useRef, useState } from 'react';
+import { alpha } from '@mui/material/styles';
 
 interface UrlListItemProps {
   item: Station;
@@ -151,16 +152,19 @@ export function UrlListItem({ item, index, onDelete, onEdit, isPlaying, onPlayPa
 
   return (
     <Draggable draggableId={item.id} index={index}>
-      {(provided, snapshot) => (
+      {(provided) => (
         <Card
           ref={provided.innerRef}
           {...provided.draggableProps}
           sx={{
             mb: 0.5,
-            backgroundColor: snapshot.isDragging ? '#2D2D2D' : '#1E1E1E',
+            bgcolor: theme => item.lastFailedAt ? alpha(theme.palette.error.main, 0.1) : 'background.paper',
+            transition: 'background-color 0.2s ease',
             '&:hover': {
-              backgroundColor: '#2D2D2D'
-            }
+              bgcolor: theme => item.lastFailedAt 
+                ? alpha(theme.palette.error.main, 0.15)
+                : alpha(theme.palette.action.hover, 0.1)
+            },
           }}
         >
           <CardContent sx={{ py: 0.5, px: 1, display: 'flex', alignItems: 'center', gap: 0.5, height: '32px' }}>
@@ -172,9 +176,25 @@ export function UrlListItem({ item, index, onDelete, onEdit, isPlaying, onPlayPa
               <DragIndicatorIcon sx={{ fontSize: 16 }} />
             </IconButton>
             <Box sx={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 1 }}>
-              <Typography variant="body2" noWrap sx={{ fontSize: '0.875rem', minWidth: '120px' }}>
-                {item.title}
-              </Typography>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, minWidth: '120px' }}>
+                <Typography variant="body2" noWrap sx={{ fontSize: '0.875rem' }}>
+                  {item.title}
+                </Typography>
+                {item.lastFailedAt && (
+                  <Tooltip title={`Failed to load at ${new Date(item.lastFailedAt).toLocaleString()}`}>
+                    <ErrorIcon sx={{ 
+                      color: 'error.main',
+                      fontSize: 16,
+                      animation: 'pulse 2s infinite',
+                      '@keyframes pulse': {
+                        '0%': { opacity: 0.6 },
+                        '50%': { opacity: 1 },
+                        '100%': { opacity: 0.6 }
+                      }
+                    }} />
+                  </Tooltip>
+                )}
+              </Box>
               {item.description && (
                 <Typography variant="caption" color="text.secondary" noWrap sx={{ fontSize: '0.75rem', flex: 1 }}>
                   {item.description}

@@ -10,7 +10,7 @@ export interface DaySchedule {
 }
 
 export interface DayPlayStats {
-  day: number;
+  day: number;  // 0-6 for Sunday-Saturday
   playCount: number;
 }
 
@@ -23,4 +23,5 @@ export interface Station {
   createdAt: Date;
   schedule?: ScheduleItem[];
   playStats?: DayPlayStats[];
+  lastFailedAt?: Date;  // Track when the station last failed to load
 } 
