@@ -30,7 +30,8 @@ contextBridge.exposeInMainWorld('electron', {
   off: (channel, callback) => {
     console.log('off called for channel:', channel);
     ipcRenderer.removeListener(channel, callback);
-  }
+  },
+  fetchStreamMetadata: (url) => ipcRenderer.invoke('fetch-stream-metadata', url)
 });
 
 console.log('Preload script finished'); 

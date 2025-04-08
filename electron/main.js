@@ -2,6 +2,8 @@ const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('path');
 const isDev = require('electron-is-dev');
 const fs = require('fs');
+const https = require('https');
+const http = require('http');
 
 let mainWindow;
 let mapWindow;
@@ -134,4 +136,33 @@ ipcMain.handle('add-station-from-map', (event, station) => {
   if (mainWindow) {
     mainWindow.webContents.send('new-station-from-map', station);
   }
+});
+
+// Add this function near the other IPC handlers
+ipcMain.handle('fetch-stream-metadata', async (event, url) => {
+  return new Promise((resolve, reject) => {
+    const protocol = url.startsWith('https') ? https : http;
+    
+    const req = protocol.get(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
+        'Icy-MetaData': '1'
+      }
+    }, (res) => {
+      const metadata = {
+        name: res.headers['icy-name'],
+        bitrate: res.headers['icy-br'],
+        genre: res.headers['icy-genre'],
+        description: res.headers['icy-description']
+      };
+      
+      // Destroy the connection after getting headers
+      req.destroy();
+      resolve(metadata);
+    });
+
+    req.on('error', (error) => {
+      reject(error);
+    });
+  });
 }); 

@@ -6,6 +6,12 @@ export interface ElectronAPI {
   addStationFromMap: (station: any) => Promise<void>;
   on: (channel: string, callback: (...args: any[]) => void) => void;
   off: (channel: string, callback: (...args: any[]) => void) => void;
+  fetchStreamMetadata: (url: string) => Promise<{
+    name?: string;
+    bitrate?: string;
+    genre?: string;
+    description?: string;
+  }>;
 }
 
 declare global {

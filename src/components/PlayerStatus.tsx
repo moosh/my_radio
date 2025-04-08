@@ -12,6 +12,8 @@ interface StreamMetadata {
   artist?: string;
   name?: string;
   bitrate?: string;
+  genre?: string;
+  description?: string;
 }
 
 export const PlayerStatus: React.FC<PlayerStatusProps> = ({ currentStation, audioElement }) => {
@@ -34,35 +36,32 @@ export const PlayerStatus: React.FC<PlayerStatusProps> = ({ currentStation, audi
       }
     };
 
-    // Function to parse ICY metadata from headers
-    const checkIcyMetadata = () => {
-      if (!audioElement.src) return;
+    // Function to fetch ICY metadata using IPC
+    const fetchIcyMetadata = async () => {
+      if (!audioElement.src || !window.electron) return;
       
-      fetch(audioElement.src)
-        .then(response => {
-          const icyName = response.headers.get('icy-name');
-          const icyBr = response.headers.get('icy-br');
-          
-          if (icyName || icyBr) {
-            setMetadata(prev => ({
-              ...prev,
-              name: icyName || prev.name,
-              bitrate: icyBr ? `${icyBr} kbps` : prev.bitrate
-            }));
-          }
-        })
-        .catch(error => console.error('Error fetching ICY metadata:', error));
+      try {
+        const streamMetadata = await window.electron.fetchStreamMetadata(audioElement.src);
+        if (streamMetadata) {
+          setMetadata(prev => ({
+            ...prev,
+            ...streamMetadata
+          }));
+        }
+      } catch (error) {
+        console.warn('Could not fetch stream metadata:', error);
+      }
     };
 
     audioElement.addEventListener('loadedmetadata', handleMetadata);
-    audioElement.addEventListener('play', checkIcyMetadata);
+    audioElement.addEventListener('play', fetchIcyMetadata);
 
-    // Initial check for ICY metadata
-    checkIcyMetadata();
+    // Initial metadata check
+    fetchIcyMetadata();
 
     return () => {
       audioElement.removeEventListener('loadedmetadata', handleMetadata);
-      audioElement.removeEventListener('play', checkIcyMetadata);
+      audioElement.removeEventListener('play', fetchIcyMetadata);
     };
   }, [audioElement]);
 
@@ -91,15 +90,17 @@ export const PlayerStatus: React.FC<PlayerStatusProps> = ({ currentStation, audi
           </Typography>
         ) : (
           <Typography variant="body1" color="text.secondary">
-            {currentStation.description || 'No metadata available'}
+            {metadata.description || currentStation.description || 'No metadata available'}
           </Typography>
         )}
 
-        {(metadata.name || metadata.bitrate) && (
+        {(metadata.name || metadata.bitrate || metadata.genre) && (
           <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 1 }}>
             {metadata.name && `Station: ${metadata.name}`}
-            {metadata.name && metadata.bitrate && ' • '}
-            {metadata.bitrate && `Quality: ${metadata.bitrate}`}
+            {metadata.name && (metadata.bitrate || metadata.genre) && ' • '}
+            {metadata.bitrate && `Quality: ${metadata.bitrate}kbps`}
+            {metadata.bitrate && metadata.genre && ' • '}
+            {metadata.genre && `Genre: ${metadata.genre}`}
           </Typography>
         )}
       </Box>
