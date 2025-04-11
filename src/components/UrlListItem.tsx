@@ -18,6 +18,11 @@ interface RadioBrowserStation {
   geo_long: number;
 }
 
+interface DayPlayStats {
+  day: number;
+  playCount: number;
+}
+
 interface UrlListItemProps {
   item: Station;
   index: number;
@@ -25,7 +30,7 @@ interface UrlListItemProps {
   onEdit: (item: Station) => void;
   isPlaying: boolean;
   onPlayPause: (stationId: string) => void;
-  onUpdatePlayStats: (stationId: string, playStats: any[]) => void;
+  onUpdatePlayStats: (stationId: string, playStats: DayPlayStats[]) => void;
 }
 
 export function UrlListItem({ item, index, onDelete, onEdit, isPlaying, onPlayPause }: UrlListItemProps) {
