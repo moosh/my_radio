@@ -3,24 +3,38 @@ import { IconButton } from '@mui/material';
 import { SwapHoriz } from '@mui/icons-material';
 import { VectorArt } from './VectorArt';
 import { VectorArt2 } from './VectorArt2';
+import { VectorArt3 } from './VectorArt3';
 
 interface AudioVisualizerProps {
   audioElement: HTMLAudioElement | null;
 }
 
 export const AudioVisualizer: React.FC<AudioVisualizerProps> = ({ audioElement }) => {
-  const [useAlternateViz, setUseAlternateViz] = useState(false);
+  const [currentViz, setCurrentViz] = useState(0);
+
+  const nextViz = () => {
+    setCurrentViz((prev) => (prev + 1) % 3);
+  };
+
+  const renderCurrentViz = () => {
+    switch (currentViz) {
+      case 0:
+        return <VectorArt audioElement={audioElement} />;
+      case 1:
+        return <VectorArt2 audioElement={audioElement} />;
+      case 2:
+        return <VectorArt3 audioElement={audioElement} />;
+      default:
+        return <VectorArt audioElement={audioElement} />;
+    }
+  };
 
   return (
     <div style={{ position: 'relative', width: '100%', height: '100%' }}>
-      {useAlternateViz ? (
-        <VectorArt2 audioElement={audioElement} />
-      ) : (
-        <VectorArt audioElement={audioElement} />
-      )}
+      {renderCurrentViz()}
       
       <IconButton
-        onClick={() => setUseAlternateViz(!useAlternateViz)}
+        onClick={nextViz}
         sx={{
           position: 'absolute',
           top: 8,
