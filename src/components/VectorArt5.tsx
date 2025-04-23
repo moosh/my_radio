@@ -32,6 +32,8 @@ const VectorArt5: React.FC<VectorArt5Props> = ({ audioElement }) => {
   const audioLevelRef = useRef<number[]>([0, 0, 0, 0]);
   const paletteRef = useRef<[number, number, number][]>([]);
   const timeRef = useRef(0);
+  const lastUpdateRef = useRef(0);
+  const baseUpdateInterval = 100; // Reduced from 400ms to 100ms (75% faster)
 
   // Set up audio monitoring
   useEffect(() => {
@@ -106,6 +108,14 @@ const VectorArt5: React.FC<VectorArt5Props> = ({ audioElement }) => {
     const animate = () => {
       if (!canvas || !ctx) return;
 
+      const currentTime = Date.now();
+      const globalAudioLevel = Math.max(...audioLevelRef.current);
+      
+      // Dynamic update interval based on audio level
+      // Faster updates with higher audio levels (min 25ms, max baseUpdateInterval)
+      const dynamicInterval = Math.max(25, baseUpdateInterval - (globalAudioLevel * 75));
+      const shouldUpdateStates = currentTime - lastUpdateRef.current >= dynamicInterval;
+      
       // Ensure palette is initialized
       if (paletteRef.current.length === 0) {
         const numColors = 48;
@@ -141,64 +151,76 @@ const VectorArt5: React.FC<VectorArt5Props> = ({ audioElement }) => {
       const data = imageData.data;
 
       timeRef.current += 1;
-      const globalAudioLevel = Math.max(...audioLevelRef.current);
 
       // Update cell states based on enhanced cellular automata rules and audio
       for (let i = 0; i < rows; i++) {
         for (let j = 0; j < cols; j++) {
           const cell = grid[i][j];
-          let neighbors = [0, 0, 0, 0]; // Count of each state type
+          
+          if (shouldUpdateStates) {
+            let neighbors = [0, 0, 0, 0]; // Count of each state type
 
-          // Count neighbors in larger radius for more interesting patterns
-          for (let di = -2; di <= 2; di++) {
-            for (let dj = -2; dj <= 2; dj++) {
-              if (di === 0 && dj === 0) continue;
-              const ni = (i + di + rows) % rows;
-              const nj = (j + dj + cols) % cols;
-              const state = grid[ni][nj].state;
-              if (state > 0) {
-                neighbors[state]++;
+            // Count neighbors in larger radius for more interesting patterns
+            for (let di = -2; di <= 2; di++) {
+              for (let dj = -2; dj <= 2; dj++) {
+                if (di === 0 && dj === 0) continue;
+                const ni = (i + di + rows) % rows;
+                const nj = (j + dj + cols) % cols;
+                const state = grid[ni][nj].state;
+                if (state > 0) {
+                  neighbors[state]++;
+                }
               }
             }
-          }
 
-          // Audio-reactive rules
-          const audioIndex = (i + j) % 4;
-          const audioLevel = audioLevelRef.current[audioIndex];
-          const totalNeighbors = neighbors.reduce((a, b) => a + b, 0);
+            // Audio-reactive rules with enhanced sensitivity
+            const audioIndex = (i + j) % 4;
+            const audioLevel = audioLevelRef.current[audioIndex];
+            const totalNeighbors = neighbors.reduce((a, b) => a + b, 0);
+            const audioBoost = Math.pow(audioLevel, 1.5) * 1.75; // Increased audio boost for faster reactions
 
-          // Complex state transition rules
-          if (cell.state === 0) {
-            // Dead cell can become any active state
-            if (totalNeighbors >= 3 && totalNeighbors <= 4 + Math.floor(audioLevel * 3)) {
-              const dominantState = neighbors.indexOf(Math.max(...neighbors));
-              cell.nextState = dominantState || 1;
-            } else {
-              cell.nextState = 0;
-            }
-          } else {
-            // Living cells evolve based on neighbor composition
-            if (totalNeighbors < 2 || totalNeighbors > 6 + Math.floor(audioLevel * 2)) {
-              cell.nextState = 0; // Death by isolation or overcrowding
-            } else {
-              // State evolution
-              const currentStateCount = neighbors[cell.state];
-              if (currentStateCount >= 2) {
-                cell.nextState = cell.state;
+            // Complex state transition rules with increased audio influence
+            if (cell.state === 0) {
+              // Dead cell can become any active state
+              // More likely to spawn new cells when audio is high
+              if (totalNeighbors >= 2 && totalNeighbors <= 4 + Math.floor(audioBoost * 4)) {
+                const dominantState = neighbors.indexOf(Math.max(...neighbors));
+                cell.nextState = dominantState || 1;
+                // Increased chance for spontaneous activation
+                if (Math.random() < audioBoost * 0.4) {
+                  cell.nextState = Math.floor(Math.random() * 3) + 1;
+                }
               } else {
-                // Transition to most common neighbor state
-                cell.nextState = neighbors.indexOf(Math.max(...neighbors));
+                cell.nextState = 0;
+              }
+            } else {
+              // Living cells evolve based on neighbor composition and audio
+              if (totalNeighbors < 2 || totalNeighbors > 5 + Math.floor(audioBoost * 3)) {
+                cell.nextState = 0; // Death by isolation or overcrowding
+              } else {
+                // State evolution with audio influence
+                const currentStateCount = neighbors[cell.state];
+                if (currentStateCount >= 2 - Math.floor(audioBoost * 1.5)) {
+                  cell.nextState = cell.state;
+                  // Increased chance for state mutation
+                  if (Math.random() < audioBoost * 0.3) {
+                    cell.nextState = Math.floor(Math.random() * 3) + 1;
+                  }
+                } else {
+                  // Transition to most common neighbor state
+                  cell.nextState = neighbors.indexOf(Math.max(...neighbors));
+                }
               }
             }
-          }
 
-          // Update cell energy and age
-          if (cell.nextState > 0) {
-            cell.energy = Math.min(1, cell.energy * 0.95 + audioLevel * 0.3);
-            cell.age++;
-          } else {
-            cell.energy *= 0.8;
-            cell.age = 0;
+            // Update cell energy and age with enhanced audio reactivity
+            if (cell.nextState > 0) {
+              cell.energy = Math.min(1, cell.energy * 0.9 + audioBoost * 0.5); // Faster energy gain
+              cell.age++;
+            } else {
+              cell.energy *= 0.7; // Faster energy decay
+              cell.age = 0;
+            }
           }
 
           // Draw cells with enhanced visual effects
@@ -233,23 +255,27 @@ const VectorArt5: React.FC<VectorArt5Props> = ({ audioElement }) => {
       ctx.shadowBlur = 15 + globalAudioLevel * 10;
       ctx.shadowColor = `hsla(${(timeRef.current / 2) % 360}, 80%, 60%, ${0.3 + globalAudioLevel * 0.4})`;
       
-      // Update states for next frame
-      for (let i = 0; i < rows; i++) {
-        for (let j = 0; j < cols; j++) {
-          grid[i][j].state = grid[i][j].nextState;
+      if (shouldUpdateStates) {
+        // Update states for next frame
+        for (let i = 0; i < rows; i++) {
+          for (let j = 0; j < cols; j++) {
+            grid[i][j].state = grid[i][j].nextState;
+          }
         }
-      }
 
-      // Audio-reactive seeding of new cells
-      if (Math.random() < 0.15 + globalAudioLevel * 0.3) {
-        const numSeeds = 2 + Math.floor(globalAudioLevel * 5);
-        for (let i = 0; i < numSeeds; i++) {
-          const row = Math.floor(Math.random() * rows);
-          const col = Math.floor(Math.random() * cols);
-          grid[row][col].state = Math.floor(Math.random() * 3) + 1;
-          grid[row][col].energy = 1;
-          grid[row][col].age = 0;
+        // Audio-reactive seeding of new cells with enhanced sensitivity
+        if (Math.random() < 0.15 + globalAudioLevel * 0.5) { // Increased seeding probability
+          const numSeeds = 3 + Math.floor(globalAudioLevel * 10); // More seeds and faster seeding
+          for (let i = 0; i < numSeeds; i++) {
+            const row = Math.floor(Math.random() * rows);
+            const col = Math.floor(Math.random() * cols);
+            grid[row][col].state = Math.floor(Math.random() * 3) + 1;
+            grid[row][col].energy = 1;
+            grid[row][col].age = 0;
+          }
         }
+
+        lastUpdateRef.current = currentTime;
       }
 
       animationFrameRef.current = requestAnimationFrame(animate);
