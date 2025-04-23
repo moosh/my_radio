@@ -32,36 +32,22 @@ const VectorArt4: React.FC<VectorArt4Props> = ({ audioElement }) => {
   const animationFrameRef = useRef<number>();
   const audioLevelRef = useRef<number[]>([0, 0, 0, 0]);
   const baseHueRef = useRef(0);
-  const spectrumDataRef = useRef<number[]>(Array(32).fill(0));
 
-  // Set up audio monitoring with spectrum analysis
+  // Set up audio monitoring (same as other visualizations)
   useEffect(() => {
     if (!audioElement) return;
 
     const handleTimeUpdate = () => {
       if (audioElement.paused) {
         audioLevelRef.current = [0, 0, 0, 0];
-        spectrumDataRef.current = Array(32).fill(0);
       } else {
         const time = Date.now() / 1000;
-        
-        // Generate main audio levels
         audioLevelRef.current = [
           Math.abs(Math.sin(time * 1.0) * 0.4 + Math.sin(time * 2.1) * 0.6),
           Math.abs(Math.sin(time * 3.2) * 0.5 + Math.sin(time * 4.3) * 0.5),
           Math.abs(Math.sin(time * 5.4) * 0.6 + Math.sin(time * 6.5) * 0.4),
           Math.abs(Math.sin(time * 7.6) * 0.3 + Math.sin(time * 8.7) * 0.7)
         ];
-
-        // Generate spectrum data
-        spectrumDataRef.current = Array(32).fill(0).map((_, i) => {
-          const freq = (i + 1) * 1.5;
-          return Math.abs(
-            Math.sin(time * freq) * 0.3 +
-            Math.sin(time * (freq * 1.5)) * 0.4 +
-            Math.sin(time * (freq * 2.0)) * 0.3
-          );
-        });
       }
     };
 
@@ -158,6 +144,7 @@ const VectorArt4: React.FC<VectorArt4Props> = ({ audioElement }) => {
       particlesRef.current.forEach((particle, index) => {
         // Audio-reactive size with reduced intensity
         const audioLevel = audioLevelRef.current[particle.audioIndex];
+        const globalAudioLevel = Math.max(...audioLevelRef.current); // Get overall audio level
         particle.radius = particle.baseRadius * (1 + audioLevel * 1.5);
 
         // Apply forces with reduced intensity
@@ -173,7 +160,9 @@ const VectorArt4: React.FC<VectorArt4Props> = ({ audioElement }) => {
           const distance = Math.sqrt(dx * dx + dy * dy);
           
           if (distance < 200) {
-            const force = (particle.charge * other.charge * 30) / (distance * distance);
+            // Reduce force when no audio is playing
+            const forceMultiplier = 30 * (0.3 + 0.7 * globalAudioLevel);
+            const force = (particle.charge * other.charge * forceMultiplier) / (distance * distance);
             const angle = Math.atan2(dy, dx);
             fx += Math.cos(angle) * force;
             fy += Math.sin(angle) * force;
@@ -182,7 +171,7 @@ const VectorArt4: React.FC<VectorArt4Props> = ({ audioElement }) => {
 
         // Audio-reactive force field with reduced intensity
         const time = Date.now() / 1000;
-        const fieldStrength = 1.5 * (1 + audioLevel);
+        const fieldStrength = 1.5 * (0.2 + 0.8 * (1 + audioLevel)); // Minimum field strength of 0.2
         fx += Math.sin(particle.y * 0.01 + time) * fieldStrength;
         fy += Math.cos(particle.x * 0.01 + time) * fieldStrength;
 
@@ -190,16 +179,26 @@ const VectorArt4: React.FC<VectorArt4Props> = ({ audioElement }) => {
         particle.vx += fx / particle.mass;
         particle.vy += fy / particle.mass;
 
-        // Increased damping for smoother movement
-        particle.vx *= 0.97;
-        particle.vy *= 0.97;
+        // Increased damping for smoother movement, extra damping when no audio
+        const dampingFactor = 0.97 - (0.02 * (1 - globalAudioLevel)); // More damping when quiet
+        particle.vx *= dampingFactor;
+        particle.vy *= dampingFactor;
+
+        // Add speed limit that's affected by audio level
+        const maxSpeed = 2 * (0.3 + 0.7 * globalAudioLevel); // Speed limit reduced to 30% when quiet
+        const currentSpeed = Math.sqrt(particle.vx * particle.vx + particle.vy * particle.vy);
+        if (currentSpeed > maxSpeed) {
+          const scale = maxSpeed / currentSpeed;
+          particle.vx *= scale;
+          particle.vy *= scale;
+        }
 
         // Update position
         particle.x += particle.vx;
         particle.y += particle.vy;
 
         // Bounce off edges with audio-reactive bounce
-        const bounceFactor = 0.8 + audioLevel * 0.4;
+        const bounceFactor = 0.6 + audioLevel * 0.4; // Reduced base bounce factor from 0.8 to 0.6
         if (particle.x < particle.radius) {
           particle.x = particle.radius;
           particle.vx *= -bounceFactor;
@@ -285,102 +284,6 @@ const VectorArt4: React.FC<VectorArt4Props> = ({ audioElement }) => {
           ctx.fillRect(x, y, 1, 1);
         }
       }
-
-      // After drawing the fluid visualization, overlay the spectrum
-      const drawSpectrum = () => {
-        const spectrumHeight = canvas.offsetHeight * 0.25;
-        const barWidth = canvas.offsetWidth / spectrumDataRef.current.length;
-        const bottomPadding = 20;
-        const y = canvas.offsetHeight - spectrumHeight - bottomPadding;
-
-        // Find the center of energy in the spectrum
-        let maxEnergy = 0;
-        let energyCenter = 0;
-        let totalEnergy = 0;
-
-        spectrumDataRef.current.forEach((value, i) => {
-          const energy = value * value; // Square for more pronounced peaks
-          totalEnergy += energy;
-          if (energy > maxEnergy) {
-            maxEnergy = energy;
-            energyCenter = i;
-          }
-        });
-
-        // Calculate the offset to center the most active frequency
-        const centerIndex = Math.floor(spectrumDataRef.current.length / 2);
-        const shift = centerIndex - energyCenter;
-        const visibleBars = spectrumDataRef.current.length;
-        
-        // Draw spectrum bars with increased amplitude and centering
-        spectrumDataRef.current.forEach((value, i) => {
-          // Shift the index to center around the energy center
-          let shiftedIndex = (i + shift + visibleBars) % visibleBars;
-          const x = shiftedIndex * barWidth;
-          
-          // Calculate height with smooth falloff from center
-          const distanceFromCenter = Math.abs(shiftedIndex - centerIndex);
-          const falloff = Math.exp(-distanceFromCenter * 0.1); // Exponential falloff
-          const height = value * spectrumHeight * 1.5 * falloff;
-          
-          const hue = (baseHueRef.current + (shiftedIndex * 360 / spectrumDataRef.current.length)) % 360;
-          
-          // Create gradient for each bar with increased opacity for better visibility
-          const gradient = ctx.createLinearGradient(x, y + spectrumHeight, x, y + spectrumHeight - height);
-          gradient.addColorStop(0, `hsla(${hue}, 70%, 50%, 0.15)`);
-          gradient.addColorStop(1, `hsla(${hue}, 70%, 70%, ${0.4 * falloff})`); // Fade opacity with distance from center
-
-          ctx.fillStyle = gradient;
-          ctx.beginPath();
-          ctx.moveTo(x, y + spectrumHeight);
-          
-          // Create a smooth curve for the top of the bar
-          const controlPointY = y + spectrumHeight - height;
-          const nextValue = spectrumDataRef.current[(i + 1) % visibleBars] || value;
-          const nextShiftedIndex = ((i + 1) + shift + visibleBars) % visibleBars;
-          const nextDistanceFromCenter = Math.abs(nextShiftedIndex - centerIndex);
-          const nextFalloff = Math.exp(-nextDistanceFromCenter * 0.1);
-          const nextHeight = nextValue * spectrumHeight * 1.5 * nextFalloff;
-          const nextX = nextShiftedIndex * barWidth;
-          const nextControlPointY = y + spectrumHeight - nextHeight;
-
-          ctx.bezierCurveTo(
-            x + barWidth * 0.5, controlPointY,
-            nextX - barWidth * 0.5, nextControlPointY,
-            nextX, nextControlPointY
-          );
-          
-          ctx.lineTo(nextX, y + spectrumHeight);
-          ctx.closePath();
-          ctx.fill();
-        });
-
-        // Add enhanced glow effect with centered emphasis
-        ctx.shadowBlur = 20;
-        ctx.shadowColor = `hsla(${baseHueRef.current}, 70%, 60%, 0.4)`;
-        ctx.fillStyle = `hsla(${baseHueRef.current}, 70%, 60%, 0.15)`;
-        ctx.beginPath();
-        ctx.moveTo(0, y + spectrumHeight);
-        
-        spectrumDataRef.current.forEach((value, i) => {
-          const shiftedIndex = (i + shift + visibleBars) % visibleBars;
-          const x = shiftedIndex * barWidth;
-          const distanceFromCenter = Math.abs(shiftedIndex - centerIndex);
-          const falloff = Math.exp(-distanceFromCenter * 0.1);
-          const height = value * spectrumHeight * 1.5 * falloff;
-          ctx.lineTo(x, y + spectrumHeight - height);
-        });
-        
-        ctx.lineTo(canvas.offsetWidth, y + spectrumHeight);
-        ctx.closePath();
-        ctx.fill();
-        
-        // Reset shadow
-        ctx.shadowBlur = 0;
-      };
-
-      // Draw spectrum after fluid visualization
-      drawSpectrum();
 
       animationFrameRef.current = requestAnimationFrame(animate);
     };
