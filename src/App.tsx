@@ -170,8 +170,6 @@ function App() {
         return lines.join('\n');
       }).join('\n\n');
 
-      console.log(`App.saveStations> stationText: `, stationsText);
-
       if (window.electron) {
         const success = await window.electron.saveStationsData(stationsText);
         if (success) {
