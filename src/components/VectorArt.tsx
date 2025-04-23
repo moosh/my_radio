@@ -8,6 +8,7 @@ interface Point {
   radius: number;
   color: string;
   hue: number;
+  colorGroup: number; // Add color group for frequency mapping
 }
 
 interface VectorArtProps {
@@ -19,29 +20,35 @@ const VectorArt: React.FC<VectorArtProps> = ({ audioElement }) => {
   const pointsRef = useRef<Point[]>([]);
   const animationFrameRef = useRef<number>();
   const hueRef = useRef(200); // Starting hue for blue theme
-  const audioLevelRef = useRef(0);
+  const audioLevelRef = useRef<number[]>([0, 0, 0, 0]); // Four frequency ranges
 
   // Set up audio monitoring
   useEffect(() => {
     if (!audioElement) return;
 
+    console.log('Setting up audio monitoring...');
+
     const handleTimeUpdate = () => {
       if (audioElement.paused) {
-        audioLevelRef.current = 0;
+        audioLevelRef.current = [0, 0, 0, 0];
       } else {
-        // Generate a pseudo-level based on time to create movement
         const time = Date.now() / 1000;
-        // Combine multiple frequencies for more interesting movement
-        const level = (
-          Math.sin(time * 2) * 0.3 + 
-          Math.sin(time * 4.3) * 0.3 + 
-          Math.sin(time * 8.7) * 0.4
-        );
-        audioLevelRef.current = Math.abs(level);
+        
+        // Generate four different frequency ranges
+        // Low, mid-low, mid-high, and high frequencies
+        audioLevelRef.current = [
+          // Low frequency (slow oscillation)
+          Math.abs(Math.sin(time * 1.0) * 0.4 + Math.sin(time * 2.1) * 0.6),
+          // Mid-low frequency
+          Math.abs(Math.sin(time * 3.2) * 0.5 + Math.sin(time * 4.3) * 0.5),
+          // Mid-high frequency
+          Math.abs(Math.sin(time * 5.4) * 0.6 + Math.sin(time * 6.5) * 0.4),
+          // High frequency (fast oscillation)
+          Math.abs(Math.sin(time * 7.6) * 0.3 + Math.sin(time * 8.7) * 0.7)
+        ];
       }
     };
 
-    // Update more frequently than timeupdate for smoother animation
     const interval = setInterval(handleTimeUpdate, 50);
     audioElement.addEventListener('play', handleTimeUpdate);
     audioElement.addEventListener('pause', handleTimeUpdate);
@@ -74,18 +81,21 @@ const VectorArt: React.FC<VectorArtProps> = ({ audioElement }) => {
       return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
     };
 
-    // Initialize points
-    const numPoints = 40;
-    pointsRef.current = Array.from({ length: numPoints }, () => {
-      const hue = (hueRef.current + Math.random() * 40 - 20) % 360;
+    // Initialize points with color groups
+    const numPoints = 90; 
+    const pointsPerGroup = numPoints / 4;
+    pointsRef.current = Array.from({ length: numPoints }, (_, index) => {
+      const colorGroup = Math.floor(index / pointsPerGroup);
+      const groupHue = (hueRef.current + colorGroup * 90) % 360; // Spread colors evenly
       return {
         x: Math.random() * canvas.offsetWidth,
         y: Math.random() * canvas.offsetHeight,
         vx: (Math.random() - 0.5) * 0.3,
         vy: (Math.random() - 0.5) * 0.3,
-        radius: Math.random() * 1.5 + 0.5,
-        color: getColor(hue),
-        hue
+        radius: Math.random() * 1.0 + 0.3, // Slightly smaller points due to increased count
+        color: getColor(groupHue),
+        hue: groupHue,
+        colorGroup
       };
     });
 
@@ -101,16 +111,19 @@ const VectorArt: React.FC<VectorArtProps> = ({ audioElement }) => {
       hueRef.current = (hueRef.current + 0.1) % 360;
 
       // Update and draw points
-      pointsRef.current.forEach((point, index) => {
-        // Always apply random movement
+      pointsRef.current.forEach((point) => {
+        // Add random movement
         point.vx += (Math.random() - 0.5) * 0.1;
         point.vy += (Math.random() - 0.5) * 0.1;
 
-        // Add audio-based jitter if audio is playing
-        if (audioLevelRef.current > 0) {
-          const normalizedIndex = index / pointsRef.current.length;
-          // Create varying jitter amounts based on point position with reduced intensity
-          const jitterAmount = audioLevelRef.current * 5.0 * (1 + Math.sin(normalizedIndex * Math.PI * 2));
+        // Add frequency-based movement
+        const jitterGain = 30.0; 
+        const jitterGroupGain = 0.0;
+        const audioLevel = audioLevelRef.current[point.colorGroup];
+        if (audioLevel > 0) {
+          // Scale jitter based on frequency range
+          const jitterScale = jitterGain * (1 + (point.colorGroup * jitterGroupGain)); // Higher frequencies get more movement
+          const jitterAmount = audioLevel * jitterScale;
           point.vx += (Math.random() - 0.5) * jitterAmount;
           point.vy += (Math.random() - 0.5) * jitterAmount;
         }
@@ -119,18 +132,29 @@ const VectorArt: React.FC<VectorArtProps> = ({ audioElement }) => {
         point.x += point.vx;
         point.y += point.vy;
 
-        // Bounce off walls with slight randomization
-        if (point.x < 0 || point.x > canvas.offsetWidth) {
-          point.vx *= -1;
-          point.vx += (Math.random() - 0.5) * 0.1;
-          point.hue = (point.hue + Math.random() * 10 - 5) % 360;
-          point.color = getColor(point.hue);
+        // Enforce strict boundary checking and repositioning
+        if (point.x < 0) {
+          point.x = 0;
+          point.vx = Math.abs(point.vx); // Force positive velocity
+        } else if (point.x > canvas.offsetWidth) {
+          point.x = canvas.offsetWidth;
+          point.vx = -Math.abs(point.vx); // Force negative velocity
         }
-        if (point.y < 0 || point.y > canvas.offsetHeight) {
-          point.vy *= -1;
+        
+        if (point.y < 0) {
+          point.y = 0;
+          point.vy = Math.abs(point.vy); // Force positive velocity
+        } else if (point.y > canvas.offsetHeight) {
+          point.y = canvas.offsetHeight;
+          point.vy = -Math.abs(point.vy); // Force negative velocity
+        }
+
+        // Add small random velocity changes after boundary collision
+        if (point.x === 0 || point.x === canvas.offsetWidth) {
+          point.vx += (Math.random() - 0.5) * 0.1;
+        }
+        if (point.y === 0 || point.y === canvas.offsetHeight) {
           point.vy += (Math.random() - 0.5) * 0.1;
-          point.hue = (point.hue + Math.random() * 10 - 5) % 360;
-          point.color = getColor(point.hue);
         }
 
         // Keep speed within bounds
@@ -160,25 +184,28 @@ const VectorArt: React.FC<VectorArtProps> = ({ audioElement }) => {
         ctx.fill();
       });
 
-      // Draw connections
+      // Draw connections only between points of the same color group
       pointsRef.current.forEach((point, i) => {
         pointsRef.current.slice(i + 1).forEach(otherPoint => {
-          const distance = Math.hypot(point.x - otherPoint.x, point.y - otherPoint.y);
-          const maxDistance = 120;
-          if (distance < maxDistance) {
-            const gradient = ctx.createLinearGradient(
-              point.x, point.y,
-              otherPoint.x, otherPoint.y
-            );
-            const opacity = 0.2 * (1 - distance / maxDistance);
-            gradient.addColorStop(0, point.color.replace(')', `, ${opacity})`).replace('hsl', 'hsla'));
-            gradient.addColorStop(1, otherPoint.color.replace(')', `, ${opacity})`).replace('hsl', 'hsla'));
-            
-            ctx.beginPath();
-            ctx.moveTo(point.x, point.y);
-            ctx.lineTo(otherPoint.x, otherPoint.y);
-            ctx.strokeStyle = gradient;
-            ctx.stroke();
+          // Only connect points in the same frequency group
+          if (point.colorGroup === otherPoint.colorGroup) {
+            const distance = Math.hypot(point.x - otherPoint.x, point.y - otherPoint.y);
+            const maxDistance = 120;
+            if (distance < maxDistance) {
+              const gradient = ctx.createLinearGradient(
+                point.x, point.y,
+                otherPoint.x, otherPoint.y
+              );
+              const opacity = 0.2 * (1 - distance / maxDistance);
+              gradient.addColorStop(0, point.color.replace(')', `, ${opacity})`).replace('hsl', 'hsla'));
+              gradient.addColorStop(1, otherPoint.color.replace(')', `, ${opacity})`).replace('hsl', 'hsla'));
+              
+              ctx.beginPath();
+              ctx.moveTo(point.x, point.y);
+              ctx.lineTo(otherPoint.x, otherPoint.y);
+              ctx.strokeStyle = gradient;
+              ctx.stroke();
+            }
           }
         });
       });
