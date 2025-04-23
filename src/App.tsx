@@ -388,7 +388,7 @@ function App() {
               borderRadius: 1,
               overflow: 'hidden'
             }}>
-              <VectorArt />
+              <VectorArt audioElement={audioRef.current} />
             </Box>
           </Box>
 

@@ -1,20 +1,65 @@
-import { useEffect, useRef } from 'react';
+import React, { useEffect, useRef } from 'react';
 
 interface Point {
   x: number;
   y: number;
   vx: number;
   vy: number;
+  baseVx: number;
+  baseVy: number;
   radius: number;
   color: string;
   hue: number;
 }
 
-export function VectorArt() {
+interface VectorArtProps {
+  audioElement: HTMLAudioElement | null;
+}
+
+const VectorArt: React.FC<VectorArtProps> = ({ audioElement }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const pointsRef = useRef<Point[]>([]);
   const animationFrameRef = useRef<number>();
   const hueRef = useRef(200); // Starting hue for blue theme
+  const audioLevelRef = useRef(0);
+
+  // Set up audio monitoring
+  useEffect(() => {
+    if (!audioElement) return;
+
+    console.log('Setting up audio monitoring...');
+
+    const handleTimeUpdate = () => {
+      if (audioElement.paused) {
+        audioLevelRef.current = 0;
+      } else {
+        // Generate a pseudo-level based on time to create movement
+        const time = Date.now() / 1000;
+        // Combine multiple frequencies for more interesting movement
+        const level = (
+          Math.sin(time * 2) * 0.3 + 
+          Math.sin(time * 4.3) * 0.3 + 
+          Math.sin(time * 8.7) * 0.4
+        );
+        audioLevelRef.current = Math.abs(level);
+        
+        if (Math.random() < 0.05) { // Log less frequently
+          console.log('Audio level:', audioLevelRef.current);
+        }
+      }
+    };
+
+    // Update more frequently than timeupdate for smoother animation
+    const interval = setInterval(handleTimeUpdate, 50);
+    audioElement.addEventListener('play', handleTimeUpdate);
+    audioElement.addEventListener('pause', handleTimeUpdate);
+
+    return () => {
+      clearInterval(interval);
+      audioElement.removeEventListener('play', handleTimeUpdate);
+      audioElement.removeEventListener('pause', handleTimeUpdate);
+    };
+  }, [audioElement]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -38,14 +83,18 @@ export function VectorArt() {
     };
 
     // Initialize points
-    const numPoints = 40; // Increased for more color variety
+    const numPoints = 40;
     pointsRef.current = Array.from({ length: numPoints }, () => {
-      const hue = (hueRef.current + Math.random() * 40 - 20) % 360; // Vary hue around base color
+      const vx = (Math.random() - 0.5) * 0.3;
+      const vy = (Math.random() - 0.5) * 0.3;
+      const hue = (hueRef.current + Math.random() * 40 - 20) % 360;
       return {
         x: Math.random() * canvas.offsetWidth,
         y: Math.random() * canvas.offsetHeight,
-        vx: (Math.random() - 0.5) * 0.3,
-        vy: (Math.random() - 0.5) * 0.3,
+        vx,
+        vy,
+        baseVx: vx,
+        baseVy: vy,
         radius: Math.random() * 1.5 + 0.5,
         color: getColor(hue),
         hue
@@ -60,11 +109,26 @@ export function VectorArt() {
       ctx.fillStyle = 'rgba(18, 18, 18, 0.1)';
       ctx.fillRect(0, 0, canvas.offsetWidth, canvas.offsetHeight);
 
+      // Get current audio level
+      const audioLevel = audioLevelRef.current;
+
       // Slowly shift base hue
       hueRef.current = (hueRef.current + 0.1) % 360;
 
       // Update and draw points
-      pointsRef.current.forEach(point => {
+      pointsRef.current.forEach((point, index) => {
+        // Add audio-based jitter if audio is playing
+        if (audioLevel > 0) {
+          const normalizedIndex = index / pointsRef.current.length;
+          // Create varying jitter amounts based on point position
+          const jitterAmount = audioLevel * 15.0 * (1 + Math.sin(normalizedIndex * Math.PI * 2));
+          point.vx = point.baseVx + (Math.random() - 0.5) * jitterAmount;
+          point.vy = point.baseVy + (Math.random() - 0.5) * jitterAmount;
+        } else {
+          point.vx = point.baseVx;
+          point.vy = point.baseVy;
+        }
+
         // Update position
         point.x += point.vx;
         point.y += point.vy;
@@ -72,15 +136,15 @@ export function VectorArt() {
         // Bounce off walls with slight randomization
         if (point.x < 0 || point.x > canvas.offsetWidth) {
           point.vx *= -1;
+          point.baseVx = point.vx;
           point.vx += (Math.random() - 0.5) * 0.1;
-          // Shift color slightly on bounce
           point.hue = (point.hue + Math.random() * 10 - 5) % 360;
           point.color = getColor(point.hue);
         }
         if (point.y < 0 || point.y > canvas.offsetHeight) {
           point.vy *= -1;
+          point.baseVy = point.vy;
           point.vy += (Math.random() - 0.5) * 0.1;
-          // Shift color slightly on bounce
           point.hue = (point.hue + Math.random() * 10 - 5) % 360;
           point.color = getColor(point.hue);
         }
@@ -118,7 +182,6 @@ export function VectorArt() {
           const distance = Math.hypot(point.x - otherPoint.x, point.y - otherPoint.y);
           const maxDistance = 120;
           if (distance < maxDistance) {
-            // Create gradient for connection
             const gradient = ctx.createLinearGradient(
               point.x, point.y,
               otherPoint.x, otherPoint.y
@@ -159,4 +222,6 @@ export function VectorArt() {
       }}
     />
   );
-} 
+};
+
+export { VectorArt }; 
