@@ -144,6 +144,12 @@ export const PlayerStatus: React.FC<PlayerStatusProps> = ({
           <Typography variant="body1" color="text.secondary">
             Select a station to start listening
           </Typography>
+          <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 1, minHeight: '1.5em' }}>
+            &nbsp;
+          </Typography>
+          <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 0.5, minHeight: '1.5em' }}>
+            &nbsp;
+          </Typography>
         </Box>
       </Paper>
     );
