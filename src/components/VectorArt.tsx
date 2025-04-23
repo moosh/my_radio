@@ -102,6 +102,10 @@ const VectorArt: React.FC<VectorArtProps> = ({ audioElement }) => {
 
       // Update and draw points
       pointsRef.current.forEach((point, index) => {
+        // Always apply random movement
+        point.vx += (Math.random() - 0.5) * 0.1;
+        point.vy += (Math.random() - 0.5) * 0.1;
+
         // Add audio-based jitter if audio is playing
         if (audioLevelRef.current > 0) {
           const normalizedIndex = index / pointsRef.current.length;
@@ -109,10 +113,6 @@ const VectorArt: React.FC<VectorArtProps> = ({ audioElement }) => {
           const jitterAmount = audioLevelRef.current * 5.0 * (1 + Math.sin(normalizedIndex * Math.PI * 2));
           point.vx += (Math.random() - 0.5) * jitterAmount;
           point.vy += (Math.random() - 0.5) * jitterAmount;
-        } else {
-          // Reset to initial velocity range when audio stops
-          point.vx = (Math.random() - 0.5) * 0.3;
-          point.vy = (Math.random() - 0.5) * 0.3;
         }
 
         // Update position
