@@ -35,8 +35,11 @@ const VectorArt5: React.FC<VectorArt5Props> = ({ audioElement }) => {
   const paletteRef = useRef<[number, number, number][]>([]);
   const timeRef = useRef(0);
   const lastUpdateRef = useRef(0);
-  const baseUpdateInterval = 100; // Reduced from 400ms to 100ms (75% faster)
-  const transitionSpeedRef = useRef(0.15); // Controls how fast states visually transition
+  const baseUpdateInterval = 100;
+  const transitionSpeedRef = useRef(0.05); // Even slower transitions
+  const energyDecayRef = useRef(0.98); // More stable energy decay
+  const lastAudioBoostRef = useRef(0);
+  const smoothedAudioRef = useRef(0);
 
   // Set up audio monitoring
   useEffect(() => {
@@ -88,7 +91,7 @@ const VectorArt5: React.FC<VectorArt5Props> = ({ audioElement }) => {
       ctx.scale(dpr, dpr);
 
       // Base size in logical pixels (CSS pixels)
-      const baseCellSize = 4; // Increased base size for better visibility
+      const baseCellSize = 4;
       
       // Calculate grid dimensions based on logical pixels
       const cols = Math.ceil(logicalWidth / baseCellSize);
@@ -105,14 +108,11 @@ const VectorArt5: React.FC<VectorArt5Props> = ({ audioElement }) => {
         }))
       );
 
-      // Generate expanded color palette
-      const numColors = 48;
+      // Generate monochromatic palette (black to white)
+      const numColors = 32; // Reduced for smoother transitions
       paletteRef.current = Array(numColors).fill(0).map((_, i) => {
-        const progress = i / (numColors - 1);
-        const hue = (progress * 180 + 200) % 360; // Wider color range
-        const saturation = 70 + Math.sin(progress * Math.PI) * 20;
-        const lightness = 40 + progress * 30;
-        return hslToRgb(hue, saturation, lightness);
+        const intensity = Math.round((i / (numColors - 1)) * 255);
+        return [intensity, intensity, intensity] as [number, number, number];
       });
     };
 
@@ -124,9 +124,12 @@ const VectorArt5: React.FC<VectorArt5Props> = ({ audioElement }) => {
 
       const currentTime = Date.now();
       const globalAudioLevel = Math.max(...audioLevelRef.current);
-      const dpr = window.devicePixelRatio;
       
-      // Get both logical and physical dimensions
+      // Smooth audio transitions
+      smoothedAudioRef.current = smoothedAudioRef.current * 0.9 + globalAudioLevel * 0.1;
+      const smoothedAudio = smoothedAudioRef.current;
+      
+      const dpr = window.devicePixelRatio;
       const logicalWidth = canvas.offsetWidth;
       const logicalHeight = canvas.offsetHeight;
       const physicalWidth = Math.floor(logicalWidth * dpr);
@@ -194,103 +197,154 @@ const VectorArt5: React.FC<VectorArt5Props> = ({ audioElement }) => {
               }
             }
 
-            // Audio-reactive rules with enhanced sensitivity
+            // Smoother audio boost with improved temporal averaging
             const audioIndex = (i + j) % 4;
             const audioLevel = audioLevelRef.current[audioIndex];
             const totalNeighbors = neighbors.reduce((a, b) => a + b, 0);
-            const audioBoost = Math.pow(audioLevel, 1.5) * 1.75; // Increased audio boost for faster reactions
+            
+            // Smooth audio boost transitions
+            const targetBoost = Math.pow(audioLevel, 1.2) * 1.5;
+            lastAudioBoostRef.current = lastAudioBoostRef.current * 0.85 + targetBoost * 0.15;
+            const audioBoost = lastAudioBoostRef.current;
 
-            // Complex state transition rules with increased audio influence
+            // Complex state transition rules with smoother influence
             if (cell.state === 0) {
-              // Dead cell can become any active state
-              // More likely to spawn new cells when audio is high
-              if (totalNeighbors >= 2 && totalNeighbors <= 4 + Math.floor(audioBoost * 4)) {
+              if (totalNeighbors >= 2 && totalNeighbors <= 4 + Math.floor(audioBoost * 3)) {
                 const dominantState = neighbors.indexOf(Math.max(...neighbors));
                 cell.nextState = dominantState || 1;
-                // Increased chance for spontaneous activation
-                if (Math.random() < audioBoost * 0.4) {
-                  cell.nextState = Math.floor(Math.random() * 3) + 1;
+                // More controlled activation with temporal stability
+                if (Math.random() < audioBoost * 0.2 && totalNeighbors >= 3) {
+                  const newState = Math.floor(Math.random() * 3) + 1;
+                  // Only change state if significantly different from current neighbors
+                  if (neighbors[newState] < totalNeighbors * 0.3) {
+                    cell.nextState = newState;
+                  }
                 }
               } else {
                 cell.nextState = 0;
               }
             } else {
-              // Living cells evolve based on neighbor composition and audio
-              if (totalNeighbors < 2 || totalNeighbors > 5 + Math.floor(audioBoost * 3)) {
-                cell.nextState = 0; // Death by isolation or overcrowding
-              } else {
-                // State evolution with audio influence
-                const currentStateCount = neighbors[cell.state];
-                if (currentStateCount >= 2 - Math.floor(audioBoost * 1.5)) {
+              const survivalThreshold = 5 + Math.floor(audioBoost * 2);
+              if (totalNeighbors < 2 || totalNeighbors > survivalThreshold) {
+                // Gradual death with improved stability
+                if (Math.random() > audioBoost * 0.3 + cell.energy * 0.2) {
+                  cell.nextState = 0;
+                } else {
                   cell.nextState = cell.state;
-                  // Increased chance for state mutation
-                  if (Math.random() < audioBoost * 0.3) {
-                    cell.nextState = Math.floor(Math.random() * 3) + 1;
+                }
+              } else {
+                const currentStateCount = neighbors[cell.state];
+                const stateStability = currentStateCount / totalNeighbors;
+                
+                if (stateStability >= 0.25 - audioBoost * 0.15) {
+                  cell.nextState = cell.state;
+                  // More stable mutations
+                  if (Math.random() < audioBoost * 0.15 && totalNeighbors > 3) {
+                    const neighborStates = neighbors.map((count, state) => 
+                      state > 0 ? Array(count).fill(state) : []
+                    ).flat();
+                    if (neighborStates.length > 0) {
+                      const newState = neighborStates[Math.floor(Math.random() * neighborStates.length)];
+                      // Only mutate if the new state is common enough
+                      if (neighbors[newState] >= 2) {
+                        cell.nextState = newState;
+                      }
+                    }
                   }
                 } else {
-                  // Transition to most common neighbor state
-                  cell.nextState = neighbors.indexOf(Math.max(...neighbors));
+                  // Smoother state transitions
+                  const maxCount = Math.max(...neighbors);
+                  const possibleStates = neighbors
+                    .map((count, state) => state > 0 && count >= maxCount - 1 ? state : 0)
+                    .filter(state => state > 0);
+                  cell.nextState = possibleStates[Math.floor(Math.random() * possibleStates.length)] || cell.state;
                 }
               }
             }
 
-            // Update cell energy and age with enhanced audio reactivity
+            // Smoother energy updates with improved temporal stability
             if (cell.nextState > 0) {
-              cell.energy = Math.min(1, cell.energy * 0.9 + audioBoost * 0.5); // Faster energy gain
+              const targetEnergy = Math.min(1, audioBoost * 0.6 + 0.4);
+              const energyDelta = targetEnergy - cell.energy;
+              cell.energy += energyDelta * 0.1; // Gradual energy adjustment
               cell.age++;
             } else {
-              cell.energy *= 0.7; // Faster energy decay
+              cell.energy *= energyDecayRef.current;
               cell.age = 0;
             }
 
-            // When state changes, reset transition progress
+            // Smoother transition initiation
             if (cell.nextState !== cell.state) {
-              cell.transitionProgress = 0;
+              // Only start transition if energy levels are appropriate
+              if (cell.nextState === 0 || cell.energy > 0.3) {
+                cell.transitionProgress = 0;
+              } else {
+                cell.nextState = cell.state; // Maintain current state if energy is too low
+              }
             }
           }
 
-          // Update transition progress
+          // Smoother transition progress
           if (cell.transitionProgress < 1) {
-            cell.transitionProgress = Math.min(1, cell.transitionProgress + transitionSpeedRef.current);
+            cell.transitionProgress = Math.min(1, 
+              cell.transitionProgress + transitionSpeedRef.current * (1 - Math.pow(cell.transitionProgress, 2))
+            );
           }
 
-          // Calculate interpolated visual state for smooth transitions
+          // Improved visual state interpolation
           const targetState = shouldUpdateStates ? cell.nextState : cell.state;
           const startState = cell.state;
-          cell.visualState = startState + (targetState - startState) * cell.transitionProgress;
+          const progress = Math.sin(cell.transitionProgress * Math.PI / 2); // Smooth easing
+          cell.visualState = startState + (targetState - startState) * progress;
 
-          // Draw cells with enhanced visual effects using interpolated state
+          // Enhanced visual effects with smoother transitions
           const x = Math.floor(j * baseCellSize);
           const y = Math.floor(i * baseCellSize);
-          const energyLevel = cell.energy * (1 + Math.sin(timeRef.current * 0.05 + i * 0.1 + j * 0.1) * 0.2);
           
-          // Adjust color based on interpolated visual state
-          const stateInfluence = Math.max(0, cell.visualState);
-          const colorIndex = Math.min(
-            Math.max(0, Math.floor((energyLevel * stateInfluence) * (paletteRef.current.length - 1))),
-            paletteRef.current.length - 1
+          // Smoother energy visualization with reduced oscillation
+          const timeScale = 0.015; // Slower time scale
+          const energyLevel = cell.energy * (
+            0.9 + 
+            Math.sin(timeRef.current * timeScale + i * 0.02 + j * 0.02) * 0.08 +
+            Math.cos(timeRef.current * timeScale * 1.5 + i * 0.03 + j * 0.03) * 0.02
           );
-          const color = paletteRef.current[colorIndex] || [0, 0, 0];
-          const [r, g, b] = color;
 
-          // Fill cell pixels with smooth transition effect
+          // Improved color transitions for monochrome
+          const stateInfluence = Math.max(0, cell.visualState);
+          const rawColorIndex = (energyLevel * stateInfluence) * (paletteRef.current.length - 1);
+          const baseColorIndex = Math.floor(rawColorIndex);
+          const colorIndex = Math.min(Math.max(0, baseColorIndex), paletteRef.current.length - 1);
+          
+          // Enhanced color interpolation
+          const color = paletteRef.current[colorIndex];
+          const nextColor = paletteRef.current[Math.min(colorIndex + 1, paletteRef.current.length - 1)];
+          const colorFraction = rawColorIndex - baseColorIndex;
+          
+          // Smoother interpolation for monochrome
+          const t = colorFraction;
+          const intensity = Math.round(color[0] * (1 - t) + nextColor[0] * t);
+          const r = intensity;
+          const g = intensity;
+          const b = intensity;
+
+          // Fill pixels with enhanced smoothing
           for (let pi = 0; pi < baseCellSize; pi++) {
             for (let pj = 0; pj < baseCellSize; pj++) {
               const pixelX = x + pj;
               const pixelY = y + pi;
               
-              // Use physical dimensions for bounds checking
               if (pixelX < physicalWidth && pixelY < physicalHeight) {
-                // Calculate index using physical dimensions
                 const index = (pixelY * physicalWidth + pixelX) * 4;
-                const ageFactor = Math.min(1, cell.age / 100);
+                const ageFactor = Math.min(1, cell.age / 150);
                 const transitionFactor = Math.sin(cell.transitionProgress * Math.PI / 2);
+                const alpha = cell.visualState > 0 
+                  ? Math.floor(255 * (0.8 + ageFactor * 0.2) * transitionFactor)
+                  : 0;
+                
                 data[index] = r;
                 data[index + 1] = g;
                 data[index + 2] = b;
-                data[index + 3] = cell.visualState > 0 
-                  ? Math.floor(255 * (0.7 + ageFactor * 0.3) * transitionFactor)
-                  : 0;
+                data[index + 3] = alpha;
               }
             }
           }
@@ -300,10 +354,11 @@ const VectorArt5: React.FC<VectorArt5Props> = ({ audioElement }) => {
       // Apply the image data
       ctx.putImageData(imageData, 0, 0);
 
-      // Enhanced bloom effect
+      // Monochromatic bloom effect
       ctx.globalCompositeOperation = 'lighter';
-      ctx.shadowBlur = 15 + globalAudioLevel * 10;
-      ctx.shadowColor = `hsla(${(timeRef.current / 2) % 360}, 80%, 60%, ${0.3 + globalAudioLevel * 0.4})`;
+      const bloomIntensity = 8 + smoothedAudio * 6;
+      ctx.shadowBlur = bloomIntensity;
+      ctx.shadowColor = `rgba(255, 255, 255, ${0.2 + smoothedAudio * 0.2})`;
       
       if (shouldUpdateStates) {
         // Update states for next frame
