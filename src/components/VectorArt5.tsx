@@ -99,7 +99,7 @@ const VectorArt5: React.FC<VectorArt5Props> = ({ audioElement }) => {
 
       gridRef.current = Array(rows).fill(0).map(() =>
         Array(cols).fill(0).map(() => ({
-          state: Math.random() > 0.92 ? Math.floor(Math.random() * 3) + 1 : 0,
+          state: Math.random() > 0.96 ? Math.floor(Math.random() * 3) + 1 : 0,
           nextState: 0,
           energy: 0,
           age: 0,
@@ -108,7 +108,7 @@ const VectorArt5: React.FC<VectorArt5Props> = ({ audioElement }) => {
         }))
       );
 
-      // Generate monochromatic palette (black to white)
+      // Generate base monochromatic palette that will be tinted
       const numColors = 32; // Reduced for smoother transitions
       paletteRef.current = Array(numColors).fill(0).map((_, i) => {
         const intensity = Math.round((i / (numColors - 1)) * 255);
@@ -125,8 +125,8 @@ const VectorArt5: React.FC<VectorArt5Props> = ({ audioElement }) => {
       const currentTime = Date.now();
       const globalAudioLevel = Math.max(...audioLevelRef.current);
       
-      // Smooth audio transitions
-      smoothedAudioRef.current = smoothedAudioRef.current * 0.9 + globalAudioLevel * 0.1;
+      // Smooth audio transitions with increased sensitivity
+      smoothedAudioRef.current = smoothedAudioRef.current * 0.6 + globalAudioLevel * 0.4; // Even faster audio response
       const smoothedAudio = smoothedAudioRef.current;
       
       const dpr = window.devicePixelRatio;
@@ -142,8 +142,8 @@ const VectorArt5: React.FC<VectorArt5Props> = ({ audioElement }) => {
         ctx.scale(dpr, dpr);
       }
       
-      // Dynamic update interval based on audio level
-      const dynamicInterval = Math.max(25, baseUpdateInterval - (globalAudioLevel * 75));
+      // Dynamic update interval more responsive to audio
+      const dynamicInterval = Math.max(15, baseUpdateInterval - (globalAudioLevel * 120)); // Faster updates with audio
       const shouldUpdateStates = currentTime - lastUpdateRef.current >= dynamicInterval;
 
       // Base size in physical pixels
@@ -156,7 +156,7 @@ const VectorArt5: React.FC<VectorArt5Props> = ({ audioElement }) => {
         const rows = Math.ceil(logicalHeight / 4);
         gridRef.current = Array(rows).fill(0).map(() =>
           Array(cols).fill(0).map(() => ({
-            state: Math.random() > 0.92 ? Math.floor(Math.random() * 3) + 1 : 0,
+            state: Math.random() > 0.96 ? Math.floor(Math.random() * 3) + 1 : 0,
             nextState: 0,
             energy: 0,
             age: 0,
@@ -175,6 +175,18 @@ const VectorArt5: React.FC<VectorArt5Props> = ({ audioElement }) => {
       const data = imageData.data;
 
       timeRef.current += 1;
+
+      // Calculate the current hue based on time
+      const hueShiftSpeed = 0.1; // Controls how fast the hue changes
+      const currentHue = (timeRef.current * hueShiftSpeed) % 360;
+      
+      // Create tint color based on current hue (at full saturation but mid lightness)
+      const [tintR, tintG, tintB] = hslToRgb(currentHue, 40, 50);
+      const tintFactors = [
+        tintR / 255,
+        tintG / 255,
+        tintB / 255
+      ];
 
       // Update cell states based on enhanced cellular automata rules and audio
       for (let i = 0; i < rows; i++) {
@@ -197,26 +209,25 @@ const VectorArt5: React.FC<VectorArt5Props> = ({ audioElement }) => {
               }
             }
 
-            // Smoother audio boost with improved temporal averaging
+            // Enhanced audio boost with improved temporal averaging
             const audioIndex = (i + j) % 4;
             const audioLevel = audioLevelRef.current[audioIndex];
             const totalNeighbors = neighbors.reduce((a, b) => a + b, 0);
             
-            // Smooth audio boost transitions
-            const targetBoost = Math.pow(audioLevel, 1.2) * 1.5;
-            lastAudioBoostRef.current = lastAudioBoostRef.current * 0.85 + targetBoost * 0.15;
+            // More dramatic audio boost transitions
+            const targetBoost = Math.pow(audioLevel, 0.8) * 3.0; // Increased audio influence and reduced curve
+            lastAudioBoostRef.current = lastAudioBoostRef.current * 0.5 + targetBoost * 0.5; // Much faster response
             const audioBoost = lastAudioBoostRef.current;
 
-            // Complex state transition rules with smoother influence
+            // Complex state transition rules with enhanced audio influence
             if (cell.state === 0) {
-              if (totalNeighbors >= 2 && totalNeighbors <= 4 + Math.floor(audioBoost * 3)) {
+              if (totalNeighbors >= 2 && totalNeighbors <= 4 + Math.floor(audioBoost * 4)) { // More audio influence on threshold
                 const dominantState = neighbors.indexOf(Math.max(...neighbors));
                 cell.nextState = dominantState || 1;
-                // More controlled activation with temporal stability
-                if (Math.random() < audioBoost * 0.2 && totalNeighbors >= 3) {
+                // More aggressive audio-reactive activation
+                if (Math.random() < audioBoost * 0.4 && totalNeighbors >= 2) { // Higher activation chance
                   const newState = Math.floor(Math.random() * 3) + 1;
-                  // Only change state if significantly different from current neighbors
-                  if (neighbors[newState] < totalNeighbors * 0.3) {
+                  if (neighbors[newState] < totalNeighbors * 0.4) { // More lenient neighbor requirement
                     cell.nextState = newState;
                   }
                 }
@@ -224,10 +235,10 @@ const VectorArt5: React.FC<VectorArt5Props> = ({ audioElement }) => {
                 cell.nextState = 0;
               }
             } else {
-              const survivalThreshold = 5 + Math.floor(audioBoost * 2);
+              const survivalThreshold = 4 + Math.floor(audioBoost * 4); // More audio influence on survival
               if (totalNeighbors < 2 || totalNeighbors > survivalThreshold) {
-                // Gradual death with improved stability
-                if (Math.random() > audioBoost * 0.3 + cell.energy * 0.2) {
+                // More audio-reactive death probability
+                if (Math.random() > audioBoost * 0.5 + cell.energy * 0.2) { // Higher survival chance with audio
                   cell.nextState = 0;
                 } else {
                   cell.nextState = cell.state;
@@ -236,40 +247,35 @@ const VectorArt5: React.FC<VectorArt5Props> = ({ audioElement }) => {
                 const currentStateCount = neighbors[cell.state];
                 const stateStability = currentStateCount / totalNeighbors;
                 
-                if (stateStability >= 0.25 - audioBoost * 0.15) {
+                // More audio-reactive stability threshold
+                if (stateStability >= 0.25 - audioBoost * 0.2) { // Lower base stability requirement
                   cell.nextState = cell.state;
-                  // More stable mutations
-                  if (Math.random() < audioBoost * 0.15 && totalNeighbors > 3) {
+                  // Enhanced audio-reactive mutations
+                  if (Math.random() < audioBoost * 0.35 && totalNeighbors > 2) { // More mutations with audio
                     const neighborStates = neighbors.map((count, state) => 
                       state > 0 ? Array(count).fill(state) : []
                     ).flat();
                     if (neighborStates.length > 0) {
                       const newState = neighborStates[Math.floor(Math.random() * neighborStates.length)];
-                      // Only mutate if the new state is common enough
                       if (neighbors[newState] >= 2) {
                         cell.nextState = newState;
                       }
                     }
                   }
                 } else {
-                  // Smoother state transitions
-                  const maxCount = Math.max(...neighbors);
-                  const possibleStates = neighbors
-                    .map((count, state) => state > 0 && count >= maxCount - 1 ? state : 0)
-                    .filter(state => state > 0);
-                  cell.nextState = possibleStates[Math.floor(Math.random() * possibleStates.length)] || cell.state;
+                  cell.nextState = 0;
                 }
               }
             }
 
-            // Smoother energy updates with improved temporal stability
+            // More responsive energy updates
             if (cell.nextState > 0) {
-              const targetEnergy = Math.min(1, audioBoost * 0.6 + 0.4);
+              const targetEnergy = Math.min(1, audioBoost * 1.2 + 0.2); // More audio influence on energy
               const energyDelta = targetEnergy - cell.energy;
-              cell.energy += energyDelta * 0.1; // Gradual energy adjustment
+              cell.energy += energyDelta * 0.3; // Even faster energy adjustment
               cell.age++;
             } else {
-              cell.energy *= energyDecayRef.current;
+              cell.energy *= 0.95 + audioBoost * 0.03; // Audio-reactive decay
               cell.age = 0;
             }
 
@@ -301,31 +307,34 @@ const VectorArt5: React.FC<VectorArt5Props> = ({ audioElement }) => {
           const x = Math.floor(j * baseCellSize);
           const y = Math.floor(i * baseCellSize);
           
-          // Smoother energy visualization with reduced oscillation
-          const timeScale = 0.015; // Slower time scale
+          // Enhanced energy visualization with audio influence
+          const timeScale = 0.02 + smoothedAudio * 0.01; // Audio-reactive time scale
           const energyLevel = cell.energy * (
             0.9 + 
-            Math.sin(timeRef.current * timeScale + i * 0.02 + j * 0.02) * 0.08 +
-            Math.cos(timeRef.current * timeScale * 1.5 + i * 0.03 + j * 0.03) * 0.02
+            Math.sin(timeRef.current * timeScale + i * 0.02 + j * 0.02) * (0.08 + smoothedAudio * 0.04) +
+            Math.cos(timeRef.current * timeScale * 1.5 + i * 0.03 + j * 0.03) * (0.02 + smoothedAudio * 0.02)
           );
 
-          // Improved color transitions for monochrome
+          // Improved color transitions for shifting monochrome
           const stateInfluence = Math.max(0, cell.visualState);
           const rawColorIndex = (energyLevel * stateInfluence) * (paletteRef.current.length - 1);
           const baseColorIndex = Math.floor(rawColorIndex);
           const colorIndex = Math.min(Math.max(0, baseColorIndex), paletteRef.current.length - 1);
           
-          // Enhanced color interpolation
+          // Enhanced color interpolation with tinting
           const color = paletteRef.current[colorIndex];
           const nextColor = paletteRef.current[Math.min(colorIndex + 1, paletteRef.current.length - 1)];
           const colorFraction = rawColorIndex - baseColorIndex;
           
-          // Smoother interpolation for monochrome
+          // Smoother interpolation with tinting
           const t = colorFraction;
-          const intensity = Math.round(color[0] * (1 - t) + nextColor[0] * t);
-          const r = intensity;
-          const g = intensity;
-          const b = intensity;
+          const baseIntensity = Math.round(color[0] * (1 - t) + nextColor[0] * t);
+          
+          // Apply tint while preserving intensity
+          const tintStrength = 0.7; // How strong the tint is (0 = grayscale, 1 = full tint)
+          const r = Math.round(baseIntensity * (1 - tintStrength + tintStrength * tintFactors[0]));
+          const g = Math.round(baseIntensity * (1 - tintStrength + tintStrength * tintFactors[1]));
+          const b = Math.round(baseIntensity * (1 - tintStrength + tintStrength * tintFactors[2]));
 
           // Fill pixels with enhanced smoothing
           for (let pi = 0; pi < baseCellSize; pi++) {
@@ -354,11 +363,11 @@ const VectorArt5: React.FC<VectorArt5Props> = ({ audioElement }) => {
       // Apply the image data
       ctx.putImageData(imageData, 0, 0);
 
-      // Monochromatic bloom effect
+      // Enhanced bloom effect with more audio reactivity
       ctx.globalCompositeOperation = 'lighter';
-      const bloomIntensity = 8 + smoothedAudio * 6;
+      const bloomIntensity = 12 + smoothedAudio * 15; // More dramatic bloom with audio
       ctx.shadowBlur = bloomIntensity;
-      ctx.shadowColor = `rgba(255, 255, 255, ${0.2 + smoothedAudio * 0.2})`;
+      ctx.shadowColor = `hsla(${currentHue}, ${70 + smoothedAudio * 20}%, ${55 + smoothedAudio * 10}%, ${0.3 + smoothedAudio * 0.4})`;
       
       if (shouldUpdateStates) {
         // Update states for next frame
@@ -370,15 +379,17 @@ const VectorArt5: React.FC<VectorArt5Props> = ({ audioElement }) => {
           }
         }
 
-        // Audio-reactive seeding of new cells with enhanced sensitivity
-        if (Math.random() < 0.15 + globalAudioLevel * 0.5) { // Increased seeding probability
-          const numSeeds = 3 + Math.floor(globalAudioLevel * 10); // More seeds and faster seeding
+        // Enhanced audio-reactive seeding with more dramatic response
+        if (Math.random() < 0.2 + globalAudioLevel * 0.6) { // Higher seeding probability
+          const numSeeds = 4 + Math.floor(globalAudioLevel * 16); // More seeds with audio
           for (let i = 0; i < numSeeds; i++) {
             const row = Math.floor(Math.random() * rows);
             const col = Math.floor(Math.random() * cols);
-            grid[row][col].state = Math.floor(Math.random() * 3) + 1;
-            grid[row][col].energy = 1;
-            grid[row][col].age = 0;
+            if (grid[row][col].state === 0) {
+              grid[row][col].state = Math.floor(Math.random() * 3) + 1;
+              grid[row][col].energy = 1;
+              grid[row][col].age = 0;
+            }
           }
         }
 
