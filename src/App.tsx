@@ -145,10 +145,32 @@ function App() {
   const saveStations = async (stations: Station[]) => {
     try {
       addDebugMessage('Saving stations...');
-      const stationsText = stations.map(station => `
-title: ${station.title}
-url: ${station.url}${station.description ? `\ndescription: ${station.description}` : ''}${station.tags && station.tags.length > 0 ? `\ntags: ${station.tags.join(', ')}` : ''}${station.playStats && station.playStats.length > 0 ? `\nplaystats: ${JSON.stringify(station.playStats)}` : ''}${station.lastFailedAt ? `\nlastfailedat: ${station.lastFailedAt.toISOString()}` : ''}
-`).join('\n');
+      const stationsText = stations.map(station => {
+        const lines = [
+          `title: ${station.title}`,
+          `url: ${station.url}`
+        ];
+        
+        if (station.description) {
+          lines.push(`description: ${station.description}`);
+        }
+        
+        if (station.tags && station.tags.length > 0) {
+          lines.push(`tags: ${station.tags.join(', ')}`);
+        }
+        
+        if (station.playStats && station.playStats.length > 0) {
+          lines.push(`playstats: ${JSON.stringify(station.playStats)}`);
+        }
+        
+        if (station.lastFailedAt) {
+          lines.push(`lastfailedat: ${station.lastFailedAt.toISOString()}`);
+        }
+        
+        return lines.join('\n');
+      }).join('\n\n');
+
+      console.log(`App.saveStations> stationText: `, stationsText);
 
       if (window.electron) {
         const success = await window.electron.saveStationsData(stationsText);
@@ -284,30 +306,32 @@ url: ${station.url}${station.description ? `\ndescription: ${station.description
         // Now that audio is loaded, try to play it
         await audioRef.current.play();
         setCurrentlyPlayingId(stationId);
-        setError(null); // Clear any previous errors when playback starts successfully
+        setError(null);
         
-        // Clear failed state if it was previously failed
-        if (station.lastFailedAt) {
-          const updatedItems = items.map(item => 
-            item.id === stationId 
-              ? { ...item, lastFailedAt: undefined }
-              : item
-          );
-          setItems(updatedItems);
-          await saveStations(updatedItems);
-        }
-        
-        // Update play stats
-        const today = new Date().getDay(); // 0-6 for Sunday-Saturday
+        // Update both lastFailedAt and play stats in a single update
+        const today = new Date().getDay();
         const existingStats = station.playStats || [];
         const todayStats = existingStats.find(stat => stat.day === today);
+        const updatedStats = todayStats
+          ? existingStats.map(stat => 
+              stat.day === today 
+                ? { ...stat, playCount: stat.playCount + 1 }
+                : stat
+            )
+          : [...existingStats, { day: today, playCount: 1 }];
+
+        const updatedItems = items.map(item => 
+          item.id === stationId 
+            ? { 
+                ...item, 
+                lastFailedAt: undefined,
+                playStats: updatedStats
+              }
+            : item
+        );
+        setItems(updatedItems);
+        await saveStations(updatedItems);
         
-        if (todayStats) {
-          todayStats.playCount += 1;
-          handleUpdatePlayStats(stationId, existingStats);
-        } else {
-          handleUpdatePlayStats(stationId, [...existingStats, { day: today, playCount: 1 }]);
-        }
       } catch (error) {
         // Clean up if play fails
         if (audioRef.current) {
