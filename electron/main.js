@@ -33,9 +33,9 @@ function createWindow() {
       : `file://${path.join(__dirname, '../dist/index.html')}`
   );
 
-  if (isDev) {
-    mainWindow.webContents.openDevTools();
-  }
+  // if (isDev) {
+  //   mainWindow.webContents.openDevTools();
+  // }
 
   mainWindow.on('closed', () => {
     mainWindow = null;
