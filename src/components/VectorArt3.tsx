@@ -24,6 +24,14 @@ const VectorArt3: React.FC<VectorArt3Props> = ({ audioElement }) => {
   const pointsRef = useRef<Point4D[]>([]);
   const animationFrameRef = useRef<number>();
   const audioLevelRef = useRef<number[]>([0, 0, 0, 0]); // Four frequency ranges
+  const rotationRef = useRef({
+    x: 0,
+    y: 0,
+    z: 0,
+    vx: (Math.random() - 0.5) * 0.01,
+    vy: (Math.random() - 0.5) * 0.01,
+    vz: (Math.random() - 0.5) * 0.01
+  });
 
   // Set up audio monitoring
   useEffect(() => {
@@ -97,12 +105,38 @@ const VectorArt3: React.FC<VectorArt3Props> = ({ audioElement }) => {
 
     // Project 4D point to 2D with protection against division by zero
     const project = (point: Point4D): { x: number; y: number; z: number } => {
+      // Apply 3D rotation to the point
+      const cosX = Math.cos(rotationRef.current.x);
+      const sinX = Math.sin(rotationRef.current.x);
+      const cosY = Math.cos(rotationRef.current.y);
+      const sinY = Math.sin(rotationRef.current.y);
+      const cosZ = Math.cos(rotationRef.current.z);
+      const sinZ = Math.sin(rotationRef.current.z);
+
+      // Rotate around X axis
+      let rotatedX = point.x;
+      let rotatedY = point.y * cosX - point.z * sinX;
+      let rotatedZ = point.y * sinX + point.z * cosX;
+
+      // Rotate around Y axis
+      const tempX = rotatedX * cosY + rotatedZ * sinY;
+      const tempZ = -rotatedX * sinY + rotatedZ * cosY;
+      rotatedX = tempX;
+      rotatedZ = tempZ;
+
+      // Rotate around Z axis
+      const finalX = rotatedX * cosZ - rotatedY * sinZ;
+      const finalY = rotatedX * sinZ + rotatedY * cosZ;
+      const finalZ = rotatedZ;
+
       // First project from 4D to 3D
       const distance4D = 30;
+      const aspectRatio = canvas.offsetWidth / canvas.offsetHeight;
+      const aspectRatio2 = 1/aspectRatio;
       const w = 1 / Math.max(0.1, distance4D - point.w);
-      const projectedX = point.x * w;
-      const projectedY = point.y * w;
-      const projectedZ = point.z * w;
+      const projectedX = finalX * w * aspectRatio2;
+      const projectedY = finalY * w;
+      const projectedZ = finalZ * w;
 
       // Then project from 3D to 2D
       const distance3D = 1.5;
@@ -117,6 +151,30 @@ const VectorArt3: React.FC<VectorArt3Props> = ({ audioElement }) => {
     // Animation function
     const animate = () => {
       if (!canvas || !ctx) return;
+
+      // Update rotation angles
+      rotationRef.current.x += rotationRef.current.vx;
+      rotationRef.current.y += rotationRef.current.vy;
+      rotationRef.current.z += rotationRef.current.vz;
+
+      // Add small random variations to rotation velocities
+      const rotationJitter = 0.0005;
+      rotationRef.current.vx += (Math.random() - 0.5) * rotationJitter;
+      rotationRef.current.vy += (Math.random() - 0.5) * rotationJitter;
+      rotationRef.current.vz += (Math.random() - 0.5) * rotationJitter;
+
+      // Dampen rotation velocities less
+      const rotationDamping = 0.995;
+      rotationRef.current.vx *= rotationDamping;
+      rotationRef.current.vy *= rotationDamping;
+      rotationRef.current.vz *= rotationDamping;
+
+      // Add audio-reactive boost to rotation
+      const rotationBoost = 0.002;
+      const avgAudioLevel = audioLevelRef.current.reduce((a, b) => a + b, 0) / 4;
+      rotationRef.current.vx += (Math.random() - 0.5) * avgAudioLevel * rotationBoost;
+      rotationRef.current.vy += (Math.random() - 0.5) * avgAudioLevel * rotationBoost;
+      rotationRef.current.vz += (Math.random() - 0.5) * avgAudioLevel * rotationBoost;
 
       // Clear canvas with fade effect
       ctx.fillStyle = 'rgba(18, 18, 18, 0.1)';
