@@ -2,7 +2,7 @@ title: RFA
 url: https://s2.voscast.com:12579/stream
 description: Radio Free America
 tags: radio, freeform
-playstats: [{"day":1,"playCount":4},{"day":2,"playCount":5},{"day":3,"playCount":10},{"day":4,"playCount":2},{"day":5,"playCount":14}]
+playstats: [{"day":1,"playCount":4},{"day":2,"playCount":5},{"day":3,"playCount":12},{"day":4,"playCount":2},{"day":5,"playCount":14}]
 
 title: WHRB
 url: http://stream.whrb.org:8000/whrb-mp3

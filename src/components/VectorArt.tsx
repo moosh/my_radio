@@ -5,8 +5,6 @@ interface Point {
   y: number;
   vx: number;
   vy: number;
-  baseVx: number;
-  baseVy: number;
   radius: number;
   color: string;
   hue: number;
@@ -27,8 +25,6 @@ const VectorArt: React.FC<VectorArtProps> = ({ audioElement }) => {
   useEffect(() => {
     if (!audioElement) return;
 
-    console.log('Setting up audio monitoring...');
-
     const handleTimeUpdate = () => {
       if (audioElement.paused) {
         audioLevelRef.current = 0;
@@ -42,10 +38,6 @@ const VectorArt: React.FC<VectorArtProps> = ({ audioElement }) => {
           Math.sin(time * 8.7) * 0.4
         );
         audioLevelRef.current = Math.abs(level);
-        
-        if (Math.random() < 0.05) { // Log less frequently
-          console.log('Audio level:', audioLevelRef.current);
-        }
       }
     };
 
@@ -85,16 +77,12 @@ const VectorArt: React.FC<VectorArtProps> = ({ audioElement }) => {
     // Initialize points
     const numPoints = 40;
     pointsRef.current = Array.from({ length: numPoints }, () => {
-      const vx = (Math.random() - 0.5) * 0.3;
-      const vy = (Math.random() - 0.5) * 0.3;
       const hue = (hueRef.current + Math.random() * 40 - 20) % 360;
       return {
         x: Math.random() * canvas.offsetWidth,
         y: Math.random() * canvas.offsetHeight,
-        vx,
-        vy,
-        baseVx: vx,
-        baseVy: vy,
+        vx: (Math.random() - 0.5) * 0.3,
+        vy: (Math.random() - 0.5) * 0.3,
         radius: Math.random() * 1.5 + 0.5,
         color: getColor(hue),
         hue
@@ -109,24 +97,22 @@ const VectorArt: React.FC<VectorArtProps> = ({ audioElement }) => {
       ctx.fillStyle = 'rgba(18, 18, 18, 0.1)';
       ctx.fillRect(0, 0, canvas.offsetWidth, canvas.offsetHeight);
 
-      // Get current audio level
-      const audioLevel = audioLevelRef.current;
-
       // Slowly shift base hue
       hueRef.current = (hueRef.current + 0.1) % 360;
 
       // Update and draw points
       pointsRef.current.forEach((point, index) => {
         // Add audio-based jitter if audio is playing
-        if (audioLevel > 0) {
+        if (audioLevelRef.current > 0) {
           const normalizedIndex = index / pointsRef.current.length;
-          // Create varying jitter amounts based on point position
-          const jitterAmount = audioLevel * 15.0 * (1 + Math.sin(normalizedIndex * Math.PI * 2));
-          point.vx = point.baseVx + (Math.random() - 0.5) * jitterAmount;
-          point.vy = point.baseVy + (Math.random() - 0.5) * jitterAmount;
+          // Create varying jitter amounts based on point position with reduced intensity
+          const jitterAmount = audioLevelRef.current * 5.0 * (1 + Math.sin(normalizedIndex * Math.PI * 2));
+          point.vx += (Math.random() - 0.5) * jitterAmount;
+          point.vy += (Math.random() - 0.5) * jitterAmount;
         } else {
-          point.vx = point.baseVx;
-          point.vy = point.baseVy;
+          // Reset to initial velocity range when audio stops
+          point.vx = (Math.random() - 0.5) * 0.3;
+          point.vy = (Math.random() - 0.5) * 0.3;
         }
 
         // Update position
@@ -136,14 +122,12 @@ const VectorArt: React.FC<VectorArtProps> = ({ audioElement }) => {
         // Bounce off walls with slight randomization
         if (point.x < 0 || point.x > canvas.offsetWidth) {
           point.vx *= -1;
-          point.baseVx = point.vx;
           point.vx += (Math.random() - 0.5) * 0.1;
           point.hue = (point.hue + Math.random() * 10 - 5) % 360;
           point.color = getColor(point.hue);
         }
         if (point.y < 0 || point.y > canvas.offsetHeight) {
           point.vy *= -1;
-          point.baseVy = point.vy;
           point.vy += (Math.random() - 0.5) * 0.1;
           point.hue = (point.hue + Math.random() * 10 - 5) % 360;
           point.color = getColor(point.hue);
@@ -176,7 +160,7 @@ const VectorArt: React.FC<VectorArtProps> = ({ audioElement }) => {
         ctx.fill();
       });
 
-      // Draw connections with distance-based opacity and color blending
+      // Draw connections
       pointsRef.current.forEach((point, i) => {
         pointsRef.current.slice(i + 1).forEach(otherPoint => {
           const distance = Math.hypot(point.x - otherPoint.x, point.y - otherPoint.y);
@@ -222,6 +206,6 @@ const VectorArt: React.FC<VectorArtProps> = ({ audioElement }) => {
       }}
     />
   );
-};
+}
 
 export { VectorArt }; 
