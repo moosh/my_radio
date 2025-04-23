@@ -6,6 +6,8 @@ interface RingSet {
   centerY: number;
   baseHue: number;
   scale: number;
+  velocityX: number;
+  velocityY: number;
 }
 
 interface Ring {
@@ -14,6 +16,7 @@ interface Ring {
   rotationSpeed: number;
   colorGroup: number;
   hueOffset: number;
+  amplitudeFactor: number;
 }
 
 interface Point {
@@ -84,9 +87,9 @@ const VectorArt2: React.FC<VectorArt2Props> = ({ audioElement }) => {
     };
 
     // Initialize multiple ring sets
-    const numSets = 3; // Number of ring sets
-    const numRingsPerSet = 4; // Rings per set
-    const pointsPerRing = 60; // Reduced points for better performance
+    const numSets = 30;
+    const numRingsPerSet = 4;
+    const pointsPerRing = 40;
 
     ringSetsRef.current = Array.from({ length: numSets }, () => {
       // Random position within canvas, avoiding edges
@@ -94,11 +97,18 @@ const VectorArt2: React.FC<VectorArt2Props> = ({ audioElement }) => {
       const centerX = margin + Math.random() * (canvas.offsetWidth - 2 * margin);
       const centerY = margin + Math.random() * (canvas.offsetHeight - 2 * margin);
       const baseHue = Math.random() * 360; // Random base hue for this set
-      const scale = 0.3 + Math.random() * 0.4; // Random size scale between 0.3 and 0.7
+      const scale = 0.1 + Math.random() * 0.25; // Smaller random size scale between 0.1 and 0.35
+      
+      // Add random velocities
+      const speed = 0.2 + Math.random() * 0.3; // Base speed
+      const angle = Math.random() * Math.PI * 2; // Random direction
+      const velocityX = Math.cos(angle) * speed;
+      const velocityY = Math.sin(angle) * speed;
 
       const rings = Array.from({ length: numRingsPerSet }, (_, ringIndex) => {
         const radius = (Math.min(canvas.offsetWidth, canvas.offsetHeight) * scale * (ringIndex + 1)) / numRingsPerSet;
-        const hueOffset = (Math.random() - 0.5) * 20; // Slight random hue variation
+        const hueOffset = (Math.random() - 0.5) * 20;
+        const amplitudeFactor = 0.3 + Math.random() * 1.7; // Random amplitude between 0.3x and 2x
 
         const points = Array.from({ length: pointsPerRing }, (_, pointIndex) => {
           const angle = (pointIndex / pointsPerRing) * Math.PI * 2;
@@ -114,9 +124,10 @@ const VectorArt2: React.FC<VectorArt2Props> = ({ audioElement }) => {
         return {
           points,
           radius,
-          rotationSpeed: (0.0005 + Math.random() * 0.001) * (ringIndex + 1), // Random speed
+          rotationSpeed: (0.0005 + Math.random() * 0.001) * (ringIndex + 1),
           colorGroup: ringIndex,
-          hueOffset
+          hueOffset,
+          amplitudeFactor
         };
       });
 
@@ -125,7 +136,9 @@ const VectorArt2: React.FC<VectorArt2Props> = ({ audioElement }) => {
         centerX,
         centerY,
         baseHue,
-        scale
+        scale,
+        velocityX,
+        velocityY
       };
     });
 
@@ -139,6 +152,35 @@ const VectorArt2: React.FC<VectorArt2Props> = ({ audioElement }) => {
 
       // Update and draw all ring sets
       ringSetsRef.current.forEach(ringSet => {
+        // Update position with velocity
+        ringSet.centerX += ringSet.velocityX;
+        ringSet.centerY += ringSet.velocityY;
+
+        // Calculate the maximum radius of this ring set
+        const maxRadius = ringSet.rings[ringSet.rings.length - 1].radius;
+
+        // Bounce off edges with some randomization
+        if (ringSet.centerX - maxRadius <= 0 || ringSet.centerX + maxRadius >= canvas.offsetWidth) {
+          ringSet.velocityX *= -1;
+          // Add slight random variation to velocity on bounce
+          ringSet.velocityX += (Math.random() - 0.5) * 0.1;
+          ringSet.velocityY += (Math.random() - 0.5) * 0.1;
+        }
+        if (ringSet.centerY - maxRadius <= 0 || ringSet.centerY + maxRadius >= canvas.offsetHeight) {
+          ringSet.velocityY *= -1;
+          // Add slight random variation to velocity on bounce
+          ringSet.velocityX += (Math.random() - 0.5) * 0.1;
+          ringSet.velocityY += (Math.random() - 0.5) * 0.1;
+        }
+
+        // Keep velocity within bounds
+        const maxSpeed = 2;
+        const speed = Math.hypot(ringSet.velocityX, ringSet.velocityY);
+        if (speed > maxSpeed) {
+          ringSet.velocityX = (ringSet.velocityX / speed) * maxSpeed;
+          ringSet.velocityY = (ringSet.velocityY / speed) * maxSpeed;
+        }
+
         ringSet.rings.forEach((ring) => {
           const audioLevel = audioLevelRef.current[ring.colorGroup];
           
@@ -147,17 +189,17 @@ const VectorArt2: React.FC<VectorArt2Props> = ({ audioElement }) => {
             // Rotate points with randomized speed
             point.angle += ring.rotationSpeed * (1 + audioLevel * 2);
             
-            // Pulse radius based on audio
-            const pulseFactor = 1 + audioLevel * 0.3;
+            // Pulse radius based on audio with varying amplitude (5x stronger)
+            const pulseFactor = 1 + (audioLevel * ring.amplitudeFactor * 1.5);
             point.radius = point.baseRadius * pulseFactor;
 
             // Calculate position relative to ring set center
             const x = ringSet.centerX + Math.cos(point.angle) * point.radius;
             const y = ringSet.centerY + Math.sin(point.angle) * point.radius;
 
-            // Draw point with glow
+            // Draw point with glow (5x stronger glow)
             ctx.beginPath();
-            const glowRadius = 1.5 + audioLevel * 2;
+            const glowRadius = 1.2 + (audioLevel * ring.amplitudeFactor * 7.5);
             ctx.arc(x, y, glowRadius, 0, Math.PI * 2);
             const gradient = ctx.createRadialGradient(
               x, y, 0,
@@ -170,12 +212,12 @@ const VectorArt2: React.FC<VectorArt2Props> = ({ audioElement }) => {
 
             // Draw point core
             ctx.beginPath();
-            ctx.arc(x, y, 0.8, 0, Math.PI * 2);
+            ctx.arc(x, y, 0.6, 0, Math.PI * 2); // Slightly smaller points
             ctx.fillStyle = point.color;
             ctx.fill();
           });
 
-          // Draw connections between adjacent points
+          // Draw connections with amplitude-affected opacity
           ctx.beginPath();
           ring.points.forEach((point, i) => {
             const nextPoint = ring.points[(i + 1) % ring.points.length];
@@ -191,7 +233,7 @@ const VectorArt2: React.FC<VectorArt2Props> = ({ audioElement }) => {
           });
           ctx.closePath();
           const ringHue = (ringSet.baseHue + ring.colorGroup * 90 + ring.hueOffset) % 360;
-          ctx.strokeStyle = `hsla(${ringHue}, 80%, 70%, ${0.1 + audioLevelRef.current[ring.colorGroup] * 0.2})`;
+          ctx.strokeStyle = `hsla(${ringHue}, 80%, 70%, ${0.1 + (audioLevelRef.current[ring.colorGroup] * ring.amplitudeFactor * 1.0)})`;
           ctx.stroke();
         });
       });
