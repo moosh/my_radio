@@ -186,56 +186,60 @@ export const PlayerStatus: React.FC<PlayerStatusProps> = ({
             )}
           </Box>
           
-          {isPlaying && (metadata.artist || metadata.title || metadata.currentSong || metadata.streamTitle) ? (
-            <Typography variant="body1" color="text.secondary">
-              {metadata.artist && metadata.title ? (
-                <>
-                  {`${metadata.artist} - ${metadata.title}`}
-                </>
+          <Typography variant="body1" color="text.secondary">
+            {isPlaying && (metadata.artist || metadata.title || metadata.currentSong || metadata.streamTitle) ? (
+              metadata.artist && metadata.title ? (
+                `${metadata.artist} - ${metadata.title}`
               ) : metadata.currentSong ? (
                 metadata.currentSong
               ) : metadata.streamTitle ? (
                 metadata.streamTitle
               ) : (
                 displayStation.description || 'No description available'
-              )}
-            </Typography>
-          ) : (
-            <Typography variant="body1" color="text.secondary">
-              {displayStation.description || 'No description available'}
-            </Typography>
-          )}
+              )
+            ) : (
+              displayStation.description || 'No description available'
+            )}
+          </Typography>
 
-          {isPlaying && (metadata.name || metadata.bitrate || metadata.genre || metadata.format) && (
-            <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 1 }}>
-              {metadata.name && `Station: ${metadata.name}`}
-              {metadata.name && (metadata.bitrate || metadata.genre || metadata.format) && ' • '}
-              {metadata.bitrate && `${metadata.bitrate}kbps`}
-              {metadata.bitrate && (metadata.format || metadata.genre) && ' • '}
-              {metadata.format && `${metadata.format.split('/')[1]?.toUpperCase() || metadata.format}`}
-              {metadata.format && metadata.genre && ' • '}
-              {metadata.genre && `Genre: ${metadata.genre}`}
-            </Typography>
-          )}
+          <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 1, minHeight: '1.5em' }}>
+            {isPlaying && (metadata.name || metadata.bitrate || metadata.genre || metadata.format) ? (
+              <>
+                {metadata.name && `Station: ${metadata.name}`}
+                {metadata.name && (metadata.bitrate || metadata.genre || metadata.format) && ' • '}
+                {metadata.bitrate && `${metadata.bitrate}kbps`}
+                {metadata.bitrate && (metadata.format || metadata.genre) && ' • '}
+                {metadata.format && `${metadata.format.split('/')[1]?.toUpperCase() || metadata.format}`}
+                {metadata.format && metadata.genre && ' • '}
+                {metadata.genre && `Genre: ${metadata.genre}`}
+              </>
+            ) : (
+              '\u00A0'
+            )}
+          </Typography>
 
-          {isPlaying && (metadata.channels || metadata.samplerate || metadata.url) && (
-            <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 0.5 }}>
-              {metadata.channels && `${metadata.channels}ch`}
-              {metadata.channels && metadata.samplerate && ' • '}
-              {metadata.samplerate && `${metadata.samplerate}Hz`}
-              {(metadata.channels || metadata.samplerate) && metadata.url && ' • '}
-              {metadata.url && (
-                <a 
-                  href={metadata.url} 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  style={{ color: 'inherit', textDecoration: 'underline' }}
-                >
-                  Station Website
-                </a>
-              )}
-            </Typography>
-          )}
+          <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 0.5, minHeight: '1.5em' }}>
+            {isPlaying && (metadata.channels || metadata.samplerate || metadata.url) ? (
+              <>
+                {metadata.channels && `${metadata.channels}ch`}
+                {metadata.channels && metadata.samplerate && ' • '}
+                {metadata.samplerate && `${metadata.samplerate}Hz`}
+                {(metadata.channels || metadata.samplerate) && metadata.url && ' • '}
+                {metadata.url && (
+                  <a 
+                    href={metadata.url} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    style={{ color: 'inherit', textDecoration: 'underline' }}
+                  >
+                    Station Website
+                  </a>
+                )}
+              </>
+            ) : (
+              '\u00A0'
+            )}
+          </Typography>
         </Box>
       </Box>
     </Paper>
