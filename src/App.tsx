@@ -8,6 +8,7 @@ import { DebugConsole } from './components/DebugConsole';
 import { Station, DayPlayStats } from './types/Station';
 import { PlayerStatus } from './components/PlayerStatus';
 import { VectorArt } from './components/VectorArt';
+import { AudioVisualizer } from './components/AudioVisualizer';
 
 // Create dark theme
 const darkTheme = createTheme({
@@ -388,7 +389,7 @@ function App() {
               borderRadius: 1,
               overflow: 'hidden'
             }}>
-              <VectorArt audioElement={audioRef.current} />
+              <AudioVisualizer audioElement={audioRef.current} />
             </Box>
           </Box>
 
