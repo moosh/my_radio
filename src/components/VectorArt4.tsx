@@ -32,22 +32,36 @@ const VectorArt4: React.FC<VectorArt4Props> = ({ audioElement }) => {
   const animationFrameRef = useRef<number>();
   const audioLevelRef = useRef<number[]>([0, 0, 0, 0]);
   const baseHueRef = useRef(0);
+  const spectrumDataRef = useRef<number[]>(Array(32).fill(0));
 
-  // Set up audio monitoring (same as other visualizations)
+  // Set up audio monitoring with spectrum analysis
   useEffect(() => {
     if (!audioElement) return;
 
     const handleTimeUpdate = () => {
       if (audioElement.paused) {
         audioLevelRef.current = [0, 0, 0, 0];
+        spectrumDataRef.current = Array(32).fill(0);
       } else {
         const time = Date.now() / 1000;
+        
+        // Generate main audio levels
         audioLevelRef.current = [
           Math.abs(Math.sin(time * 1.0) * 0.4 + Math.sin(time * 2.1) * 0.6),
           Math.abs(Math.sin(time * 3.2) * 0.5 + Math.sin(time * 4.3) * 0.5),
           Math.abs(Math.sin(time * 5.4) * 0.6 + Math.sin(time * 6.5) * 0.4),
           Math.abs(Math.sin(time * 7.6) * 0.3 + Math.sin(time * 8.7) * 0.7)
         ];
+
+        // Generate spectrum data
+        spectrumDataRef.current = Array(32).fill(0).map((_, i) => {
+          const freq = (i + 1) * 1.5;
+          return Math.abs(
+            Math.sin(time * freq) * 0.3 +
+            Math.sin(time * (freq * 1.5)) * 0.4 +
+            Math.sin(time * (freq * 2.0)) * 0.3
+          );
+        });
       }
     };
 
@@ -271,6 +285,70 @@ const VectorArt4: React.FC<VectorArt4Props> = ({ audioElement }) => {
           ctx.fillRect(x, y, 1, 1);
         }
       }
+
+      // After drawing the fluid visualization, overlay the spectrum
+      const drawSpectrum = () => {
+        const spectrumHeight = canvas.offsetHeight * 0.15; // 15% of canvas height
+        const barWidth = canvas.offsetWidth / spectrumDataRef.current.length;
+        const bottomPadding = 20;
+        const y = canvas.offsetHeight - spectrumHeight - bottomPadding;
+
+        // Draw spectrum bars
+        spectrumDataRef.current.forEach((value, i) => {
+          const x = i * barWidth;
+          const height = value * spectrumHeight;
+          const hue = (baseHueRef.current + (i * 360 / spectrumDataRef.current.length)) % 360;
+          
+          // Create gradient for each bar
+          const gradient = ctx.createLinearGradient(x, y + spectrumHeight, x, y + spectrumHeight - height);
+          gradient.addColorStop(0, `hsla(${hue}, 70%, 50%, 0.1)`);
+          gradient.addColorStop(1, `hsla(${hue}, 70%, 70%, 0.3)`);
+
+          ctx.fillStyle = gradient;
+          ctx.beginPath();
+          ctx.moveTo(x, y + spectrumHeight);
+          
+          // Create a smooth curve for the top of the bar
+          const controlPointY = y + spectrumHeight - height;
+          const nextValue = spectrumDataRef.current[i + 1] || value;
+          const nextHeight = nextValue * spectrumHeight;
+          const nextX = (i + 1) * barWidth;
+          const nextControlPointY = y + spectrumHeight - nextHeight;
+
+          ctx.bezierCurveTo(
+            x + barWidth * 0.5, controlPointY,
+            nextX - barWidth * 0.5, nextControlPointY,
+            nextX, nextControlPointY
+          );
+          
+          ctx.lineTo(nextX, y + spectrumHeight);
+          ctx.closePath();
+          ctx.fill();
+        });
+
+        // Add subtle glow effect
+        ctx.shadowBlur = 15;
+        ctx.shadowColor = `hsla(${baseHueRef.current}, 70%, 60%, 0.3)`;
+        ctx.fillStyle = `hsla(${baseHueRef.current}, 70%, 60%, 0.1)`;
+        ctx.beginPath();
+        ctx.moveTo(0, y + spectrumHeight);
+        
+        spectrumDataRef.current.forEach((value, i) => {
+          const x = i * barWidth;
+          const height = value * spectrumHeight;
+          ctx.lineTo(x, y + spectrumHeight - height);
+        });
+        
+        ctx.lineTo(canvas.offsetWidth, y + spectrumHeight);
+        ctx.closePath();
+        ctx.fill();
+        
+        // Reset shadow
+        ctx.shadowBlur = 0;
+      };
+
+      // Draw spectrum after fluid visualization
+      drawSpectrum();
 
       animationFrameRef.current = requestAnimationFrame(animate);
     };
