@@ -288,21 +288,47 @@ const VectorArt4: React.FC<VectorArt4Props> = ({ audioElement }) => {
 
       // After drawing the fluid visualization, overlay the spectrum
       const drawSpectrum = () => {
-        const spectrumHeight = canvas.offsetHeight * 0.15; // 15% of canvas height
+        const spectrumHeight = canvas.offsetHeight * 0.25;
         const barWidth = canvas.offsetWidth / spectrumDataRef.current.length;
         const bottomPadding = 20;
         const y = canvas.offsetHeight - spectrumHeight - bottomPadding;
 
-        // Draw spectrum bars
+        // Find the center of energy in the spectrum
+        let maxEnergy = 0;
+        let energyCenter = 0;
+        let totalEnergy = 0;
+
         spectrumDataRef.current.forEach((value, i) => {
-          const x = i * barWidth;
-          const height = value * spectrumHeight;
-          const hue = (baseHueRef.current + (i * 360 / spectrumDataRef.current.length)) % 360;
+          const energy = value * value; // Square for more pronounced peaks
+          totalEnergy += energy;
+          if (energy > maxEnergy) {
+            maxEnergy = energy;
+            energyCenter = i;
+          }
+        });
+
+        // Calculate the offset to center the most active frequency
+        const centerIndex = Math.floor(spectrumDataRef.current.length / 2);
+        const shift = centerIndex - energyCenter;
+        const visibleBars = spectrumDataRef.current.length;
+        
+        // Draw spectrum bars with increased amplitude and centering
+        spectrumDataRef.current.forEach((value, i) => {
+          // Shift the index to center around the energy center
+          let shiftedIndex = (i + shift + visibleBars) % visibleBars;
+          const x = shiftedIndex * barWidth;
           
-          // Create gradient for each bar
+          // Calculate height with smooth falloff from center
+          const distanceFromCenter = Math.abs(shiftedIndex - centerIndex);
+          const falloff = Math.exp(-distanceFromCenter * 0.1); // Exponential falloff
+          const height = value * spectrumHeight * 1.5 * falloff;
+          
+          const hue = (baseHueRef.current + (shiftedIndex * 360 / spectrumDataRef.current.length)) % 360;
+          
+          // Create gradient for each bar with increased opacity for better visibility
           const gradient = ctx.createLinearGradient(x, y + spectrumHeight, x, y + spectrumHeight - height);
-          gradient.addColorStop(0, `hsla(${hue}, 70%, 50%, 0.1)`);
-          gradient.addColorStop(1, `hsla(${hue}, 70%, 70%, 0.3)`);
+          gradient.addColorStop(0, `hsla(${hue}, 70%, 50%, 0.15)`);
+          gradient.addColorStop(1, `hsla(${hue}, 70%, 70%, ${0.4 * falloff})`); // Fade opacity with distance from center
 
           ctx.fillStyle = gradient;
           ctx.beginPath();
@@ -310,9 +336,12 @@ const VectorArt4: React.FC<VectorArt4Props> = ({ audioElement }) => {
           
           // Create a smooth curve for the top of the bar
           const controlPointY = y + spectrumHeight - height;
-          const nextValue = spectrumDataRef.current[i + 1] || value;
-          const nextHeight = nextValue * spectrumHeight;
-          const nextX = (i + 1) * barWidth;
+          const nextValue = spectrumDataRef.current[(i + 1) % visibleBars] || value;
+          const nextShiftedIndex = ((i + 1) + shift + visibleBars) % visibleBars;
+          const nextDistanceFromCenter = Math.abs(nextShiftedIndex - centerIndex);
+          const nextFalloff = Math.exp(-nextDistanceFromCenter * 0.1);
+          const nextHeight = nextValue * spectrumHeight * 1.5 * nextFalloff;
+          const nextX = nextShiftedIndex * barWidth;
           const nextControlPointY = y + spectrumHeight - nextHeight;
 
           ctx.bezierCurveTo(
@@ -326,16 +355,19 @@ const VectorArt4: React.FC<VectorArt4Props> = ({ audioElement }) => {
           ctx.fill();
         });
 
-        // Add subtle glow effect
-        ctx.shadowBlur = 15;
-        ctx.shadowColor = `hsla(${baseHueRef.current}, 70%, 60%, 0.3)`;
-        ctx.fillStyle = `hsla(${baseHueRef.current}, 70%, 60%, 0.1)`;
+        // Add enhanced glow effect with centered emphasis
+        ctx.shadowBlur = 20;
+        ctx.shadowColor = `hsla(${baseHueRef.current}, 70%, 60%, 0.4)`;
+        ctx.fillStyle = `hsla(${baseHueRef.current}, 70%, 60%, 0.15)`;
         ctx.beginPath();
         ctx.moveTo(0, y + spectrumHeight);
         
         spectrumDataRef.current.forEach((value, i) => {
-          const x = i * barWidth;
-          const height = value * spectrumHeight;
+          const shiftedIndex = (i + shift + visibleBars) % visibleBars;
+          const x = shiftedIndex * barWidth;
+          const distanceFromCenter = Math.abs(shiftedIndex - centerIndex);
+          const falloff = Math.exp(-distanceFromCenter * 0.1);
+          const height = value * spectrumHeight * 1.5 * falloff;
           ctx.lineTo(x, y + spectrumHeight - height);
         });
         
