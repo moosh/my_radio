@@ -81,8 +81,8 @@ const VectorArt2: React.FC<VectorArt2Props> = ({ audioElement }) => {
     window.addEventListener('resize', updateSize);
 
     // Color utilities
-    const getColor = (hue: number, saturation = 80, lightness = 70) => {
-      return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+    const getColor = (hue: number, saturation = 80, lightness = 70, alpha = 0.0) => {
+      return `hsla(${hue}, ${saturation}%, ${lightness}%, ${alpha})`;
     };
 
     // Initialize multiple ring sets
@@ -196,21 +196,24 @@ const VectorArt2: React.FC<VectorArt2Props> = ({ audioElement }) => {
 
             // Draw point with glow
             ctx.beginPath();
-            const glowRadius = 1.2 + (audioLevel * 40.5);
+            const glowGain = 10.5;
+            const glowRadius = 1.2 + (audioLevel * glowGain);
             ctx.arc(x, y, glowRadius, 0, Math.PI * 2);
             const gradient = ctx.createRadialGradient(
               x, y, 0,
               x, y, glowRadius
             );
+            const ringHue = (ringSet.baseHue + ring.colorGroup * 90 + ring.hueOffset) % 360;
             gradient.addColorStop(0, point.color);
+            gradient.addColorStop(0.6, `hsla(${ringHue}, 80%, 70%, 0.2)`);
             gradient.addColorStop(1, 'rgba(18, 18, 18, 0)');
             ctx.fillStyle = gradient;
             ctx.fill();
 
-            // Draw point core
+            // Draw point core with transparency
             ctx.beginPath();
-            ctx.arc(x, y, 0.6, 0, Math.PI * 2); // Slightly smaller points
-            ctx.fillStyle = point.color;
+            ctx.arc(x, y, 0.6, 0, Math.PI * 2);
+            ctx.fillStyle = point.color.replace('0.6', '0.8'); // Slightly more opaque for the core
             ctx.fill();
           });
 
@@ -230,7 +233,7 @@ const VectorArt2: React.FC<VectorArt2Props> = ({ audioElement }) => {
           });
           ctx.closePath();
           const ringHue = (ringSet.baseHue + ring.colorGroup * 90 + ring.hueOffset) % 360;
-          ctx.strokeStyle = `hsla(${ringHue}, 80%, 70%, ${0.1 + (audioLevelRef.current[ring.colorGroup] * 1.0)})`;
+          ctx.strokeStyle = `hsla(${ringHue}, 80%, 70%, ${0.05 + (audioLevelRef.current[ring.colorGroup] * 0.4)})`;
           ctx.stroke();
         });
       });
