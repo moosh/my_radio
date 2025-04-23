@@ -76,14 +76,23 @@ const VectorArt5: React.FC<VectorArt5Props> = ({ audioElement }) => {
 
     // Set canvas size
     const updateSize = () => {
-      canvas.width = canvas.offsetWidth * window.devicePixelRatio;
-      canvas.height = canvas.offsetHeight * window.devicePixelRatio;
-      ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+      const dpr = window.devicePixelRatio;
+      const logicalWidth = canvas.offsetWidth;
+      const logicalHeight = canvas.offsetHeight;
+      
+      // Set canvas buffer size to match physical pixels
+      canvas.width = logicalWidth * dpr;
+      canvas.height = logicalHeight * dpr;
+      
+      // Scale the context to handle DPR
+      ctx.scale(dpr, dpr);
 
-      // Initialize grid with cell size of 2x2 pixels for more detail
-      const cellSize = 2;
-      const cols = Math.ceil(canvas.offsetWidth / cellSize);
-      const rows = Math.ceil(canvas.offsetHeight / cellSize);
+      // Base size in logical pixels (CSS pixels)
+      const baseCellSize = 4; // Increased base size for better visibility
+      
+      // Calculate grid dimensions based on logical pixels
+      const cols = Math.ceil(logicalWidth / baseCellSize);
+      const rows = Math.ceil(logicalHeight / baseCellSize);
 
       gridRef.current = Array(rows).fill(0).map(() =>
         Array(cols).fill(0).map(() => ({
@@ -115,30 +124,33 @@ const VectorArt5: React.FC<VectorArt5Props> = ({ audioElement }) => {
 
       const currentTime = Date.now();
       const globalAudioLevel = Math.max(...audioLevelRef.current);
+      const dpr = window.devicePixelRatio;
+      
+      // Get both logical and physical dimensions
+      const logicalWidth = canvas.offsetWidth;
+      const logicalHeight = canvas.offsetHeight;
+      const physicalWidth = Math.floor(logicalWidth * dpr);
+      const physicalHeight = Math.floor(logicalHeight * dpr);
+      
+      // Ensure canvas dimensions match physical pixels
+      if (canvas.width !== physicalWidth || canvas.height !== physicalHeight) {
+        canvas.width = physicalWidth;
+        canvas.height = physicalHeight;
+        ctx.scale(dpr, dpr);
+      }
       
       // Dynamic update interval based on audio level
-      // Faster updates with higher audio levels (min 25ms, max baseUpdateInterval)
       const dynamicInterval = Math.max(25, baseUpdateInterval - (globalAudioLevel * 75));
       const shouldUpdateStates = currentTime - lastUpdateRef.current >= dynamicInterval;
-      
-      // Ensure palette is initialized
-      if (paletteRef.current.length === 0) {
-        const numColors = 48;
-        paletteRef.current = Array(numColors).fill(0).map((_, i) => {
-          const progress = i / (numColors - 1);
-          const hue = (progress * 180 + 200) % 360;
-          const saturation = 70 + Math.sin(progress * Math.PI) * 20;
-          const lightness = 40 + progress * 30;
-          return hslToRgb(hue, saturation, lightness);
-        });
-      }
 
-      const cellSize = 2;
+      // Base size in physical pixels
+      const baseCellSize = Math.floor(4 * dpr);
+      
       let grid = gridRef.current;
       if (!grid || !grid[0]) {
         // Re-initialize grid if it's not set up
-        const cols = Math.ceil(canvas.offsetWidth / cellSize);
-        const rows = Math.ceil(canvas.offsetHeight / cellSize);
+        const cols = Math.ceil(logicalWidth / 4);  // Use logical pixels for grid size
+        const rows = Math.ceil(logicalHeight / 4);
         gridRef.current = Array(rows).fill(0).map(() =>
           Array(cols).fill(0).map(() => ({
             state: Math.random() > 0.92 ? Math.floor(Math.random() * 3) + 1 : 0,
@@ -154,7 +166,9 @@ const VectorArt5: React.FC<VectorArt5Props> = ({ audioElement }) => {
 
       const rows = grid.length;
       const cols = grid[0].length;
-      const imageData = ctx.createImageData(canvas.offsetWidth, canvas.offsetHeight);
+      
+      // Create image data using physical dimensions
+      const imageData = ctx.createImageData(physicalWidth, physicalHeight);
       const data = imageData.data;
 
       timeRef.current += 1;
@@ -246,7 +260,8 @@ const VectorArt5: React.FC<VectorArt5Props> = ({ audioElement }) => {
           cell.visualState = startState + (targetState - startState) * cell.transitionProgress;
 
           // Draw cells with enhanced visual effects using interpolated state
-          const baseIndex = (i * cellSize * canvas.offsetWidth + j * cellSize) * 4;
+          const x = Math.floor(j * baseCellSize);
+          const y = Math.floor(i * baseCellSize);
           const energyLevel = cell.energy * (1 + Math.sin(timeRef.current * 0.05 + i * 0.1 + j * 0.1) * 0.2);
           
           // Adjust color based on interpolated visual state
@@ -259,17 +274,24 @@ const VectorArt5: React.FC<VectorArt5Props> = ({ audioElement }) => {
           const [r, g, b] = color;
 
           // Fill cell pixels with smooth transition effect
-          for (let pi = 0; pi < cellSize; pi++) {
-            for (let pj = 0; pj < cellSize; pj++) {
-              const index = baseIndex + (pi * canvas.offsetWidth + pj) * 4;
-              const ageFactor = Math.min(1, cell.age / 100);
-              const transitionFactor = Math.sin(cell.transitionProgress * Math.PI / 2); // Smooth easing
-              data[index] = r;
-              data[index + 1] = g;
-              data[index + 2] = b;
-              data[index + 3] = cell.visualState > 0 
-                ? Math.floor(255 * (0.7 + ageFactor * 0.3) * transitionFactor)
-                : 0;
+          for (let pi = 0; pi < baseCellSize; pi++) {
+            for (let pj = 0; pj < baseCellSize; pj++) {
+              const pixelX = x + pj;
+              const pixelY = y + pi;
+              
+              // Use physical dimensions for bounds checking
+              if (pixelX < physicalWidth && pixelY < physicalHeight) {
+                // Calculate index using physical dimensions
+                const index = (pixelY * physicalWidth + pixelX) * 4;
+                const ageFactor = Math.min(1, cell.age / 100);
+                const transitionFactor = Math.sin(cell.transitionProgress * Math.PI / 2);
+                data[index] = r;
+                data[index + 1] = g;
+                data[index + 2] = b;
+                data[index + 3] = cell.visualState > 0 
+                  ? Math.floor(255 * (0.7 + ageFactor * 0.3) * transitionFactor)
+                  : 0;
+              }
             }
           }
         }
