@@ -9,7 +9,7 @@ interface Particle {
   baseRadius: number;
   mass: number;
   charge: number;
-  hue: number;
+  hueOffset: number;
   audioIndex: number;
 }
 
@@ -31,6 +31,7 @@ const VectorArt4: React.FC<VectorArt4Props> = ({ audioElement }) => {
   const fluidFieldRef = useRef<FluidField | null>(null);
   const animationFrameRef = useRef<number>();
   const audioLevelRef = useRef<number[]>([0, 0, 0, 0]);
+  const baseHueRef = useRef(0);
 
   // Set up audio monitoring (same as other visualizations)
   useEffect(() => {
@@ -110,7 +111,7 @@ const VectorArt4: React.FC<VectorArt4Props> = ({ audioElement }) => {
         baseRadius: 15 + Math.random() * 25,
         mass: 1 + Math.random() * 2,
         charge: Math.random() < 0.5 ? -1 : 1,
-        hue: 200 + (i * 60 / numParticles) % 120,
+        hueOffset: (i * 60 / numParticles) % 120,
         audioIndex: i % 4
       };
     });
@@ -118,6 +119,9 @@ const VectorArt4: React.FC<VectorArt4Props> = ({ audioElement }) => {
     // Animation function
     const animate = () => {
       if (!canvas || !ctx || !offscreenCanvasRef.current || !fluidFieldRef.current) return;
+
+      // Update base hue
+      baseHueRef.current = (baseHueRef.current + 0.2) % 360;
 
       const offscreenCtx = offscreenCanvasRef.current.getContext('2d')!;
       const fluid = fluidFieldRef.current;
@@ -224,7 +228,7 @@ const VectorArt4: React.FC<VectorArt4Props> = ({ audioElement }) => {
         offscreenCtx.fill();
       });
 
-      // Process metaballs
+      // Process metaballs with cycling colors
       const imageData = offscreenCtx.getImageData(0, 0, canvas.width, canvas.height);
       const pixels = imageData.data;
 
@@ -254,13 +258,16 @@ const VectorArt4: React.FC<VectorArt4Props> = ({ audioElement }) => {
           const audioLevel = audioLevelRef.current[nearestParticle.audioIndex];
           const brightness = 50 + audioLevel * 15;
           const saturation = 60 + fluidValue * 20;
+          
+          // Calculate final hue by combining base hue and particle's offset
+          const finalHue = (baseHueRef.current + nearestParticle.hueOffset) % 360;
 
           pixels[i] = 0;   // R
           pixels[i+1] = 0; // G
           pixels[i+2] = 0; // B
           pixels[i+3] = 255; // A
 
-          ctx.fillStyle = `hsla(${nearestParticle.hue}, ${saturation}%, ${brightness}%, 0.08)`;
+          ctx.fillStyle = `hsla(${finalHue}, ${saturation}%, ${brightness}%, 0.08)`;
           ctx.fillRect(x, y, 1, 1);
         }
       }
