@@ -16,7 +16,6 @@ interface Ring {
   rotationSpeed: number;
   colorGroup: number;
   hueOffset: number;
-  amplitudeFactor: number;
 }
 
 interface Point {
@@ -108,7 +107,6 @@ const VectorArt2: React.FC<VectorArt2Props> = ({ audioElement }) => {
       const rings = Array.from({ length: numRingsPerSet }, (_, ringIndex) => {
         const radius = (Math.min(canvas.offsetWidth, canvas.offsetHeight) * scale * (ringIndex + 1)) / numRingsPerSet;
         const hueOffset = (Math.random() - 0.5) * 20;
-        const amplitudeFactor = 0.3 + Math.random() * 1.7; // Random amplitude between 0.3x and 2x
 
         const points = Array.from({ length: pointsPerRing }, (_, pointIndex) => {
           const angle = (pointIndex / pointsPerRing) * Math.PI * 2;
@@ -126,8 +124,7 @@ const VectorArt2: React.FC<VectorArt2Props> = ({ audioElement }) => {
           radius,
           rotationSpeed: (0.0005 + Math.random() * 0.001) * (ringIndex + 1),
           colorGroup: ringIndex,
-          hueOffset,
-          amplitudeFactor
+          hueOffset
         };
       });
 
@@ -186,20 +183,20 @@ const VectorArt2: React.FC<VectorArt2Props> = ({ audioElement }) => {
           
           // Update points
           ring.points.forEach((point) => {
-            // Rotate points with randomized speed
+            // Rotate points with randomized spee3
             point.angle += ring.rotationSpeed * (1 + audioLevel * 2);
             
-            // Pulse radius based on audio with varying amplitude (5x stronger)
-            const pulseFactor = 1 + (audioLevel * ring.amplitudeFactor * 1.5);
+            // Pulse radius based on audio
+            const pulseFactor = 1 + (audioLevel * 5);
             point.radius = point.baseRadius * pulseFactor;
 
             // Calculate position relative to ring set center
             const x = ringSet.centerX + Math.cos(point.angle) * point.radius;
             const y = ringSet.centerY + Math.sin(point.angle) * point.radius;
 
-            // Draw point with glow (5x stronger glow)
+            // Draw point with glow
             ctx.beginPath();
-            const glowRadius = 1.2 + (audioLevel * ring.amplitudeFactor * 7.5);
+            const glowRadius = 1.2 + (audioLevel * 40.5);
             ctx.arc(x, y, glowRadius, 0, Math.PI * 2);
             const gradient = ctx.createRadialGradient(
               x, y, 0,
@@ -233,7 +230,7 @@ const VectorArt2: React.FC<VectorArt2Props> = ({ audioElement }) => {
           });
           ctx.closePath();
           const ringHue = (ringSet.baseHue + ring.colorGroup * 90 + ring.hueOffset) % 360;
-          ctx.strokeStyle = `hsla(${ringHue}, 80%, 70%, ${0.1 + (audioLevelRef.current[ring.colorGroup] * ring.amplitudeFactor * 1.0)})`;
+          ctx.strokeStyle = `hsla(${ringHue}, 80%, 70%, ${0.1 + (audioLevelRef.current[ring.colorGroup] * 1.0)})`;
           ctx.stroke();
         });
       });
