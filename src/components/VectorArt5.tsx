@@ -5,6 +5,8 @@ interface Cell {
   nextState: number;
   energy: number;
   age: number;
+  transitionProgress: number; // For smooth state transitions
+  visualState: number; // For interpolated display
 }
 
 interface VectorArt5Props {
@@ -34,6 +36,7 @@ const VectorArt5: React.FC<VectorArt5Props> = ({ audioElement }) => {
   const timeRef = useRef(0);
   const lastUpdateRef = useRef(0);
   const baseUpdateInterval = 100; // Reduced from 400ms to 100ms (75% faster)
+  const transitionSpeedRef = useRef(0.15); // Controls how fast states visually transition
 
   // Set up audio monitoring
   useEffect(() => {
@@ -87,7 +90,9 @@ const VectorArt5: React.FC<VectorArt5Props> = ({ audioElement }) => {
           state: Math.random() > 0.92 ? Math.floor(Math.random() * 3) + 1 : 0,
           nextState: 0,
           energy: 0,
-          age: 0
+          age: 0,
+          transitionProgress: 1,
+          visualState: 0
         }))
       );
 
@@ -139,7 +144,9 @@ const VectorArt5: React.FC<VectorArt5Props> = ({ audioElement }) => {
             state: Math.random() > 0.92 ? Math.floor(Math.random() * 3) + 1 : 0,
             nextState: 0,
             energy: 0,
-            age: 0
+            age: 0,
+            transitionProgress: 1,
+            visualState: 0
           }))
         );
         grid = gridRef.current;
@@ -221,27 +228,48 @@ const VectorArt5: React.FC<VectorArt5Props> = ({ audioElement }) => {
               cell.energy *= 0.7; // Faster energy decay
               cell.age = 0;
             }
+
+            // When state changes, reset transition progress
+            if (cell.nextState !== cell.state) {
+              cell.transitionProgress = 0;
+            }
           }
 
-          // Draw cells with enhanced visual effects
+          // Update transition progress
+          if (cell.transitionProgress < 1) {
+            cell.transitionProgress = Math.min(1, cell.transitionProgress + transitionSpeedRef.current);
+          }
+
+          // Calculate interpolated visual state for smooth transitions
+          const targetState = shouldUpdateStates ? cell.nextState : cell.state;
+          const startState = cell.state;
+          cell.visualState = startState + (targetState - startState) * cell.transitionProgress;
+
+          // Draw cells with enhanced visual effects using interpolated state
           const baseIndex = (i * cellSize * canvas.offsetWidth + j * cellSize) * 4;
           const energyLevel = cell.energy * (1 + Math.sin(timeRef.current * 0.05 + i * 0.1 + j * 0.1) * 0.2);
+          
+          // Adjust color based on interpolated visual state
+          const stateInfluence = Math.max(0, cell.visualState);
           const colorIndex = Math.min(
-            Math.max(0, Math.floor(energyLevel * (paletteRef.current.length - 1))),
+            Math.max(0, Math.floor((energyLevel * stateInfluence) * (paletteRef.current.length - 1))),
             paletteRef.current.length - 1
           );
           const color = paletteRef.current[colorIndex] || [0, 0, 0];
           const [r, g, b] = color;
 
-          // Fill cell pixels with glow effect
+          // Fill cell pixels with smooth transition effect
           for (let pi = 0; pi < cellSize; pi++) {
             for (let pj = 0; pj < cellSize; pj++) {
               const index = baseIndex + (pi * canvas.offsetWidth + pj) * 4;
               const ageFactor = Math.min(1, cell.age / 100);
+              const transitionFactor = Math.sin(cell.transitionProgress * Math.PI / 2); // Smooth easing
               data[index] = r;
               data[index + 1] = g;
               data[index + 2] = b;
-              data[index + 3] = cell.state > 0 ? Math.floor(255 * (0.7 + ageFactor * 0.3)) : 0;
+              data[index + 3] = cell.visualState > 0 
+                ? Math.floor(255 * (0.7 + ageFactor * 0.3) * transitionFactor)
+                : 0;
             }
           }
         }
@@ -259,7 +287,9 @@ const VectorArt5: React.FC<VectorArt5Props> = ({ audioElement }) => {
         // Update states for next frame
         for (let i = 0; i < rows; i++) {
           for (let j = 0; j < cols; j++) {
-            grid[i][j].state = grid[i][j].nextState;
+            if (grid[i][j].transitionProgress >= 0.95) { // Only update state when transition is nearly complete
+              grid[i][j].state = grid[i][j].nextState;
+            }
           }
         }
 
