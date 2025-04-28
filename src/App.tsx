@@ -7,7 +7,7 @@ import { parseStationsFile } from './utils/stationParser';
 import { DebugConsole } from './components/DebugConsole';
 import { Station, DayPlayStats } from './types/Station';
 import { PlayerStatus } from './components/PlayerStatus';
-import { VectorArt } from './components/VectorArt';
+//import { VectorArt } from './components/VectorArt';
 import { AudioVisualizer } from './components/AudioVisualizer';
 
 // Create dark theme

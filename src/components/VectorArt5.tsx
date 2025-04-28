@@ -37,7 +37,7 @@ const VectorArt5: React.FC<VectorArt5Props> = ({ audioElement }) => {
   const lastUpdateRef = useRef(0);
   const baseUpdateInterval = 100;
   const transitionSpeedRef = useRef(0.05); // Even slower transitions
-  const energyDecayRef = useRef(0.98); // More stable energy decay
+  //const energyDecayRef = useRef(0.98); // More stable energy decay
   const lastAudioBoostRef = useRef(0);
   const smoothedAudioRef = useRef(0);
 
