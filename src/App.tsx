@@ -9,6 +9,7 @@ import { Station, DayPlayStats } from './types/Station';
 import { PlayerStatus } from './components/PlayerStatus';
 //import { VectorArt } from './components/VectorArt';
 import { AudioVisualizer } from './components/AudioVisualizer';
+import { PlaylistStationCard } from './components/PlaylistStationCard';
 
 // Create dark theme
 const darkTheme = createTheme({
@@ -87,6 +88,7 @@ function App() {
   const [currentlyPlayingId, setCurrentlyPlayingId] = useState<string | null>(null);
   const [showDebugConsole, setShowDebugConsole] = useState(false);
   const audioRef = useRef<HTMLAudioElement>(null);
+  const [playlistShows, setPlaylistShows] = useState<Array<{ description: string; url: string }>>([]);
 
   // Add keyboard shortcut for toggling debug console
   useEffect(() => {
@@ -367,28 +369,49 @@ function App() {
     try {
       const shows = await window.electron.fetchPlaylist(playlistUrl);
       console.debug('Fetched shows:', shows);
-      
-      // Add each show as a new station
-      const newStations = shows.map(show => ({
-        id: crypto.randomUUID(),
-        title: show.description,
-        url: show.url,
-        description: `Imported from playlist: ${playlistUrl}`,
-        tags: ['playlist', 'imported'],
-        createdAt: new Date()
-      }));
-      
-      // Add new stations to the list
-      const updatedItems = [...items, ...newStations];
-      setItems(updatedItems);
-      await saveStations(updatedItems);
-      
-      handleClosePlaylistDialog();
+      setPlaylistShows(shows);
     } catch (error) {
       const title = error instanceof Error ? error.message : 'Unknown error';
       console.error('Failed to fetch playlist:', error);
       window.electron.showError({ title });
     }
+  };
+
+  const handleAddShow = async (show: { description: string; url: string }) => {
+    const newStation = {
+      id: crypto.randomUUID(),
+      title: show.description,
+      url: show.url,
+      description: `Imported from playlist: ${playlistUrl}`,
+      tags: ['playlist', 'imported'],
+      createdAt: new Date()
+    };
+    
+    const updatedItems = [...items, newStation];
+    setItems(updatedItems);
+    await saveStations(updatedItems);
+  };
+
+  const handlePreviewShow = (url: string) => {
+    // Find a temporary station ID for this preview
+    const previewId = `preview-${crypto.randomUUID()}`;
+    const tempStation = {
+      id: previewId,
+      title: 'Preview',
+      url: url,
+      description: 'Preview from playlist',
+      tags: ['preview'],
+      createdAt: new Date()
+    };
+    
+    // Add temporary station and start playing it
+    setItems(prev => [...prev, tempStation]);
+    handlePlayPause(previewId);
+    
+    // Remove the temporary station after a delay
+    setTimeout(() => {
+      setItems(prev => prev.filter(item => item.id !== previewId));
+    }, 100);
   };
 
   return (
@@ -536,13 +559,26 @@ function App() {
                   required
                   placeholder="https://www.wfmu.org/playlists/LM"
                 />
+                <Button 
+                  variant="contained" 
+                  onClick={handlePlaylistSubmit}
+                  disabled={!playlistUrl}
+                >
+                  Fetch Shows
+                </Button>
+                
+                {playlistShows.length > 0 && (
+                  <PlaylistStationCard
+                    playlistUrl={playlistUrl}
+                    shows={playlistShows}
+                    onAddShow={handleAddShow}
+                    onPreviewShow={handlePreviewShow}
+                  />
+                )}
               </Box>
             </DialogContent>
             <DialogActions>
-              <Button onClick={handleClosePlaylistDialog}>Cancel</Button>
-              <Button onClick={handlePlaylistSubmit} variant="contained">
-                Add
-              </Button>
+              <Button onClick={handleClosePlaylistDialog}>Close</Button>
             </DialogActions>
           </Dialog>
 
