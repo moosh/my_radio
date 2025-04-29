@@ -230,4 +230,47 @@ ipcMain.handle('fetch-stream-metadata', async (event, url) => {
       reject(error);
     });
   });
+});
+
+// Handle fetching playlist URLs
+ipcMain.handle('fetch-playlist', async (event, url) => {
+  return new Promise((resolve, reject) => {
+    const protocol = url.startsWith('https') ? https : http;
+    
+    const req = protocol.get(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36'
+      }
+    }, (res) => {
+      let data = '';
+      
+      res.on('data', (chunk) => {
+        data += chunk;
+      });
+      
+      res.on('end', () => {
+        try {
+          const shows = [];
+          // Find all show entries using regex
+          const regex = /<b>'([^']+)'[^<]*<\/b>[\s\S]*?<a href="([^"]+\.m3u[^"]*)"[^>]*>MP3/g;
+          let match;
+          
+          while ((match = regex.exec(data)) !== null) {
+            const description = match[1].trim();
+            const url = new URL(match[2], 'https://www.wfmu.org').href;
+            shows.push({ description, url });
+            console.log('Found show:', { description, url });
+          }
+          
+          resolve(shows);
+        } catch (error) {
+          reject(error);
+        }
+      });
+    });
+    
+    req.on('error', (error) => {
+      reject(error);
+    });
+  });
 }); 

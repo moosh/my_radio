@@ -12,6 +12,11 @@ export interface ElectronAPI {
     genre?: string;
     description?: string;
   }>;
+  fetchPlaylist: (url: string) => Promise<Array<{
+    description: string;
+    url: string;
+  }>>;
+  showError: (options: { title: string }) => void;
 }
 
 declare global {
@@ -20,4 +25,4 @@ declare global {
   }
 }
 
-export {}; 
+export { }; 

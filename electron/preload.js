@@ -31,7 +31,11 @@ contextBridge.exposeInMainWorld('electron', {
     console.log('off called for channel:', channel);
     ipcRenderer.removeListener(channel, callback);
   },
-  fetchStreamMetadata: (url) => ipcRenderer.invoke('fetch-stream-metadata', url)
+  fetchStreamMetadata: (url) => ipcRenderer.invoke('fetch-stream-metadata', url),
+  fetchPlaylist: (url) => {
+    console.log('fetchPlaylist called for URL:', url);
+    return ipcRenderer.invoke('fetch-playlist', url);
+  }
 });
 
 console.log('Preload script finished'); 

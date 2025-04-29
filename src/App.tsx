@@ -73,6 +73,8 @@ const darkTheme = createTheme({
 function App() {
   const [items, setItems] = useState<Station[]>([]);
   const [openDialog, setOpenDialog] = useState(false);
+  const [openPlaylistDialog, setOpenPlaylistDialog] = useState(false);
+  const [playlistUrl, setPlaylistUrl] = useState('');
   const [editingItem, setEditingItem] = useState<Station | null>(null);
   const [formData, setFormData] = useState({
     title: '',
@@ -356,6 +358,39 @@ function App() {
     }
   };
 
+  const handleClosePlaylistDialog = () => {
+    setOpenPlaylistDialog(false);
+    setPlaylistUrl('');
+  };
+
+  const handlePlaylistSubmit = async () => {
+    try {
+      const shows = await window.electron.fetchPlaylist(playlistUrl);
+      console.debug('Fetched shows:', shows);
+      
+      // Add each show as a new station
+      const newStations = shows.map(show => ({
+        id: crypto.randomUUID(),
+        title: show.description,
+        url: show.url,
+        description: `Imported from playlist: ${playlistUrl}`,
+        tags: ['playlist', 'imported'],
+        createdAt: new Date()
+      }));
+      
+      // Add new stations to the list
+      const updatedItems = [...items, ...newStations];
+      setItems(updatedItems);
+      await saveStations(updatedItems);
+      
+      handleClosePlaylistDialog();
+    } catch (error) {
+      const title = error instanceof Error ? error.message : 'Unknown error';
+      console.error('Failed to fetch playlist:', error);
+      window.electron.showError({ title });
+    }
+  };
+
   return (
     <ThemeProvider theme={darkTheme}>
       <Box sx={{ bgcolor: 'background.default', minHeight: '100vh', py: 4 }}>
@@ -374,6 +409,13 @@ function App() {
                 onClick={() => handleOpenDialog()}
               >
                 Add Station
+              </Button>
+              <Button
+                variant="contained"
+                startIcon={<AddIcon />}
+                onClick={() => setOpenPlaylistDialog(true)}
+              >
+                Add Playlist
               </Button>
               <Button
                 variant="outlined"
@@ -473,6 +515,33 @@ function App() {
               <Button onClick={handleCloseDialog}>Cancel</Button>
               <Button onClick={handleSubmit} variant="contained">
                 {editingItem ? 'Save' : 'Add'}
+              </Button>
+            </DialogActions>
+          </Dialog>
+
+          <Dialog 
+            open={openPlaylistDialog} 
+            onClose={handleClosePlaylistDialog}
+            maxWidth="md"
+            fullWidth
+          >
+            <DialogTitle>Add Playlist URL</DialogTitle>
+            <DialogContent>
+              <Box sx={{ pt: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
+                <TextField
+                  label="Playlist URL"
+                  value={playlistUrl}
+                  onChange={(e) => setPlaylistUrl(e.target.value)}
+                  fullWidth
+                  required
+                  placeholder="https://www.wfmu.org/playlists/LM"
+                />
+              </Box>
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={handleClosePlaylistDialog}>Cancel</Button>
+              <Button onClick={handlePlaylistSubmit} variant="contained">
+                Add
               </Button>
             </DialogActions>
           </Dialog>
