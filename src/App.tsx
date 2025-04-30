@@ -404,6 +404,8 @@ function App() {
       createdAt: new Date()
     };
     
+    console.log('handlePreviewShow', url);
+    
     // Add temporary station and start playing it
     setItems(prev => [...prev, tempStation]);
     handlePlayPause(previewId);
