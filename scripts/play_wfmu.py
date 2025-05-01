@@ -77,25 +77,48 @@ def get_stream_url_from_flashplayer(popup_url):
     try:
         # First try to construct direct S3 URL
         if 'flashplayer.php' in popup_url:
+            logger.info(f"\nProcessing Flash player URL: {popup_url}")
             parsed = urlparse(popup_url)
             params = parse_qs(parsed.query)
             show_id = params.get('show', [''])[0]
             archive_id = params.get('archive', [''])[0]
+            logger.info(f"Extracted show_id: {show_id}, archive_id: {archive_id}")
             
             # Extract date from the page to construct filename
+            logger.info("Fetching Flash player page content...")
             response = requests.get(popup_url)
+            
+            # Save the raw HTML content for inspection
+            debug_file = os.path.join(os.path.dirname(os.path.dirname(__file__)), "debug_flashplayer.html")
+            with open(debug_file, 'w', encoding='utf-8') as f:
+                f.write(response.text)
+            logger.info(f"Saved raw HTML content to: {debug_file}")
+            
             if response.status_code == 200:
                 soup = BeautifulSoup(response.text, 'html.parser')
                 # Look for the audio source
                 audio_source = soup.find('source')
+                logger.info(f"Found audio source tag: {audio_source}")
+                
                 if audio_source and 'src' in audio_source.attrs:
                     rtmp_url = audio_source['src']
+                    logger.info(f"Extracted RTMP URL: {rtmp_url}")
+                    
                     # Extract filename from RTMP URL (e.g., lm250424.mp4)
                     filename_match = re.search(r'mp4:LM/([^"]+)', rtmp_url)
                     if filename_match:
                         filename = filename_match.group(1)
+                        logger.info(f"Extracted filename: {filename}")
                         # Construct S3 URL
-                        return f"https://s3.amazonaws.com/arch.wfmu.org/LM/{filename}"
+                        s3_url = f"https://s3.amazonaws.com/arch.wfmu.org/LM/{filename}"
+                        logger.info(f"Constructed S3 URL: {s3_url}")
+                        return s3_url
+                    else:
+                        logger.error("Could not extract filename from RTMP URL")
+                else:
+                    logger.error("No audio source tag found or missing src attribute")
+            else:
+                logger.error(f"Failed to fetch Flash player page: {response.status_code}")
 
         return None
     except Exception as e:
@@ -105,8 +128,8 @@ def get_stream_url_from_flashplayer(popup_url):
 def play_stream(url, title):
     """Play a media stream."""
     try:
-        # Create a VLC instance with logging
-        instance = vlc.Instance('--verbose=2')
+        # Create a VLC instance without verbose logging
+        instance = vlc.Instance('--quiet')
         
         # Create a media player
         player = instance.media_player_new()

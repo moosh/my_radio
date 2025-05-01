@@ -1,17 +1,17 @@
 {
-  "last_updated": "2025-04-30T10:59:33.103207",
+  "last_updated": "2025-05-01T16:16:46.242789",
   "source_url": "https://www.wfmu.org/playlists/LM",
   "playlists": [
     {
       "date": "May 1, 2025",
       "title": "'A sigh is weightless, yet it may interrupt the broadcast' - anne carson",
-      "show_id": "",
+      "show_id": "151581",
       "playlist_link": "https://www.wfmu.org/playlists/shows/151581",
-      "m3u_url": "",
+      "m3u_url": "https://www.wfmu.org/listen.m3u?show=151581&archive=269718",
       "mp3_listen_url": "",
-      "popup_listen_url": "",
-      "direct_media_url": "",
-      "raw_text": "See the playlist"
+      "popup_listen_url": "https://www.wfmu.org/flashplayer.php?version=3&show=151581&archive=269718",
+      "direct_media_url": "rtmpt://rtmp.wfmu.org/cfx/st/mp4:LM/lm250501.mp4",
+      "raw_text": "Pop-up player!"
     },
     {
       "date": "April 24, 2025",
