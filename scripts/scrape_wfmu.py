@@ -7,21 +7,74 @@ from datetime import datetime
 import os
 from urllib.parse import urlparse, parse_qs
 
-def construct_mp3_url(popup_url):
-    """Construct MP3 URL from popup player URL by extracting show and archive IDs."""
+def get_media_url_from_flashplayer(popup_url):
+    """Extract the direct media URL from the flashplayer.php page."""
     if not popup_url:
         return ""
         
-    # Parse the URL and get query parameters
-    parsed = urlparse(popup_url)
-    params = parse_qs(parsed.query)
-    
-    # Extract show and archive IDs
-    show_id = params.get('show', [''])[0]
-    archive_id = params.get('archive', [''])[0]
-    
-    if show_id and archive_id:
-        return f"https://www.wfmu.org/listen.m3u?show={show_id}&archive={archive_id}"
+    try:
+        response = requests.get(popup_url)
+        response.raise_for_status()
+        
+        # Find the playlist-data textarea
+        soup = BeautifulSoup(response.text, 'html.parser')
+        playlist_data = soup.find('textarea', {'id': 'playlist-data'})
+        
+        if not playlist_data:
+            return ""
+            
+        # Parse the JSON data
+        try:
+            data = json.loads(playlist_data.string.strip())
+            if data and 'audio' in data and '@attributes' in data['audio']:
+                return data['audio']['@attributes']['url']
+        except json.JSONDecodeError:
+            pass
+            
+    except Exception as e:
+        print(f"Error fetching flashplayer page {popup_url}: {e}")
+        
+    return ""
+
+def construct_m3u_url(popup_url):
+    """Construct M3U URL from popup player URL by extracting show and archive IDs."""
+    if not popup_url:
+        return ""
+        
+    try:
+        # Parse the URL and get query parameters
+        parsed = urlparse(popup_url)
+        params = parse_qs(parsed.query)
+        
+        # Extract show and archive IDs
+        show_id = params.get('show', [''])[0]
+        archive_id = params.get('archive', [''])[0]
+        
+        if show_id and archive_id:
+            return f"https://www.wfmu.org/listen.m3u?show={show_id}&archive={archive_id}"
+    except Exception:
+        pass
+        
+    return ""
+
+def get_mp3_url_from_m3u(m3u_url):
+    """Download and parse M3U file to get the actual MP3 stream URL."""
+    if not m3u_url:
+        return ""
+        
+    try:
+        response = requests.get(m3u_url, timeout=10)
+        response.raise_for_status()
+        
+        # M3U files are typically plain text with one URL per line
+        # We'll take the first non-empty, non-comment line
+        for line in response.text.splitlines():
+            line = line.strip()
+            if line and not line.startswith('#'):
+                return line
+    except Exception as e:
+        print(f"Error fetching M3U file {m3u_url}: {e}")
+        
     return ""
 
 def scrape_wfmu_playlists():
@@ -40,7 +93,7 @@ def scrape_wfmu_playlists():
         playlist_items = []
         
         # Regular expression to match the date and title format
-        date_pattern = re.compile(r'([A-Za-z]+ \d+,? \d{4})')
+        date_pattern = re.compile(r'([A-Za-z]+ \d+,? (\d{4}))')
         
         for li in soup.find_all('li'):
             text = li.get_text(strip=True)
@@ -55,6 +108,11 @@ def scrape_wfmu_playlists():
                 continue
                 
             date_str = date_match.group(1)
+            year = int(date_match.group(2))
+            
+            # Stop processing if we hit 2024 or earlier
+            if year <= 2024:
+                break
             
             # Find the title (usually in bold)
             title = ""
@@ -64,7 +122,7 @@ def scrape_wfmu_playlists():
             
             # Find the playlist link and listen URLs
             playlist_link = ""
-            mp3_listen_url = ""
+            m3u_url = ""
             popup_listen_url = ""
             
             # Find all links in the list item
@@ -76,18 +134,24 @@ def scrape_wfmu_playlists():
                 if "See the playlist" in text:
                     playlist_link = "https://www.wfmu.org" + href
                 elif text == "MP3 - 128K" and href.endswith('.m3u'):
-                    mp3_listen_url = "https://www.wfmu.org" + href
+                    m3u_url = "https://www.wfmu.org" + href
                 elif "Pop-up" in text and 'flashplayer.php' in href:
                     popup_listen_url = "https://www.wfmu.org" + href
             
-            # If no MP3 URL is available but we have a popup URL, construct the MP3 URL
-            if not mp3_listen_url and popup_listen_url:
-                mp3_listen_url = construct_mp3_url(popup_listen_url)
+            # If no M3U URL is available but we have a popup URL, construct the M3U URL
+            if not m3u_url and popup_listen_url:
+                m3u_url = construct_m3u_url(popup_listen_url)
+            
+            # Get the actual MP3 URL from the M3U file
+            mp3_listen_url = get_mp3_url_from_m3u(m3u_url)
+            
+            # Get the direct media URL from the flashplayer page
+            direct_media_url = get_media_url_from_flashplayer(popup_listen_url) if popup_listen_url else ""
             
             # Extract show ID if available
             show_id = ""
-            if mp3_listen_url:
-                show_id_match = re.search(r'show=(\d+)', mp3_listen_url)
+            if m3u_url:
+                show_id_match = re.search(r'show=(\d+)', m3u_url)
                 if show_id_match:
                     show_id = show_id_match.group(1)
             
@@ -97,8 +161,10 @@ def scrape_wfmu_playlists():
                 "title": title,
                 "show_id": show_id,
                 "playlist_link": playlist_link,
+                "m3u_url": m3u_url,
                 "mp3_listen_url": mp3_listen_url,
                 "popup_listen_url": popup_listen_url,
+                "direct_media_url": direct_media_url,
                 "raw_text": text
             }
             
@@ -113,7 +179,7 @@ def scrape_wfmu_playlists():
                 "playlists": playlist_items
             }, f, indent=2, ensure_ascii=False)
             
-        print(f"Successfully scraped {len(playlist_items)} playlist entries")
+        print(f"Successfully scraped {len(playlist_items)} playlist entries from 2025")
         print(f"Data saved to: {output_path}")
         
     except requests.RequestException as e:

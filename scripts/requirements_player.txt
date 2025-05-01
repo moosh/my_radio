@@ -1,0 +1,3 @@
+python-vlc>=3.0.20000
+requests>=2.31.0
+beautifulsoup4>=4.12.0 
