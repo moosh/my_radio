@@ -77,6 +77,18 @@ def get_mp3_url_from_m3u(m3u_url):
         
     return ""
 
+def get_s3_url_from_rtmp(rtmp_url):
+    """Convert RTMP URL to S3 URL."""
+    if not rtmp_url:
+        return None
+    # Extract filename from RTMP URL (e.g., lm250424.mp4)
+    filename_match = re.search(r'mp4:LM/([^"]+)', rtmp_url)
+    if filename_match:
+        filename = filename_match.group(1)
+        # Construct S3 URL
+        return f"https://s3.amazonaws.com/arch.wfmu.org/LM/{filename}"
+    return None
+
 def scrape_wfmu_playlists():
     # URL to scrape
     url = "https://www.wfmu.org/playlists/LM"
@@ -171,6 +183,9 @@ def scrape_wfmu_playlists():
             # Get the direct media URL from the flashplayer page
             direct_media_url = get_media_url_from_flashplayer(popup_listen_url)
             
+            # Convert RTMP URL to S3 URL
+            mp4_listen_url = get_s3_url_from_rtmp(direct_media_url)
+            
             # Create playlist entry
             entry = {
                 "date": date_str,
@@ -180,6 +195,7 @@ def scrape_wfmu_playlists():
                 "playlist_link": playlist_link,
                 "popup_listen_url": popup_listen_url,
                 "direct_media_url": direct_media_url,
+                "mp4_listen_url": mp4_listen_url,
                 "raw_text": text
             }
             
