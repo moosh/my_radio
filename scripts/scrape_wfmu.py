@@ -138,14 +138,20 @@ def scrape_wfmu_playlists():
                 
                 if "See the playlist" in text:
                     playlist_link = "https://www.wfmu.org" + href
-                elif "Pop-up" in text and 'flashplayer.php' in href:
+                elif "Pop-up" in text or ('flashplayer.php' in href and 'version=3' in href):
                     # Parse the URL to get show and archive IDs
                     parsed = urlparse(href)
                     params = parse_qs(parsed.query)
+                    
+                    # Get the first show and archive ID from the parameters
                     show_id = params.get('show', [''])[0]
                     archive_id = params.get('archive', [''])[0]
+                    
                     if show_id and archive_id:
+                        # Construct the popup URL in the exact format
                         popup_listen_url = f"https://www.wfmu.org/flashplayer.php?version=3&show={show_id}&archive={archive_id}"
+                        # Once we find a valid flashplayer URL, break to avoid overwriting with other links
+                        break
             
             # Skip entries without a popup player URL
             if not popup_listen_url:
