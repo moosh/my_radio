@@ -86,6 +86,12 @@ def scrape_wfmu_playlists():
         response = requests.get(url)
         response.raise_for_status()  # Raise an exception for bad status codes
         
+        # Save the raw HTML to a file
+        html_output_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "wfmu_playlist_page.html")
+        with open(html_output_path, 'w', encoding='utf-8') as f:
+            f.write(response.text)
+        print(f"Raw HTML saved to: {html_output_path}")
+        
         # Parse the HTML
         soup = BeautifulSoup(response.text, 'html.parser')
         
@@ -94,6 +100,10 @@ def scrape_wfmu_playlists():
         
         # Regular expression to match the date and title format
         date_pattern = re.compile(r'([A-Za-z]+ \d+,? (\d{4}))')
+        
+        # Counter for limiting entries
+        entry_count = 0
+        max_entries = 4
         
         for li in soup.find_all('li'):
             text = li.get_text(strip=True)
@@ -117,6 +127,8 @@ def scrape_wfmu_playlists():
             # Find the playlist link and listen URLs
             playlist_link = ""
             popup_listen_url = ""
+            show_id = ""
+            archive_id = ""
             
             # Find all links in the list item
             links = li.find_all('a')
@@ -127,7 +139,13 @@ def scrape_wfmu_playlists():
                 if "See the playlist" in text:
                     playlist_link = "https://www.wfmu.org" + href
                 elif "Pop-up" in text and 'flashplayer.php' in href:
-                    popup_listen_url = "https://www.wfmu.org" + href
+                    # Parse the URL to get show and archive IDs
+                    parsed = urlparse(href)
+                    params = parse_qs(parsed.query)
+                    show_id = params.get('show', [''])[0]
+                    archive_id = params.get('archive', [''])[0]
+                    if show_id and archive_id:
+                        popup_listen_url = f"https://www.wfmu.org/flashplayer.php?version=3&show={show_id}&archive={archive_id}"
             
             # Skip entries without a popup player URL
             if not popup_listen_url:
@@ -144,36 +162,27 @@ def scrape_wfmu_playlists():
                 # Remove any trailing dots or spaces
                 title = title.rstrip('. ')
             
-            # Construct M3U URL from popup URL
-            m3u_url = construct_m3u_url(popup_listen_url)
-            
-            # Get the actual MP3 URL from the M3U file
-            mp3_listen_url = get_mp3_url_from_m3u(m3u_url)
-            
             # Get the direct media URL from the flashplayer page
             direct_media_url = get_media_url_from_flashplayer(popup_listen_url)
-            
-            # Extract show ID from popup URL
-            show_id = ""
-            if popup_listen_url:
-                parsed = urlparse(popup_listen_url)
-                params = parse_qs(parsed.query)
-                show_id = params.get('show', [''])[0]
             
             # Create playlist entry
             entry = {
                 "date": date_str,
                 "title": title,
                 "show_id": show_id,
+                "archive_id": archive_id,
                 "playlist_link": playlist_link,
-                "m3u_url": m3u_url,
-                "mp3_listen_url": mp3_listen_url,
                 "popup_listen_url": popup_listen_url,
                 "direct_media_url": direct_media_url,
                 "raw_text": text
             }
             
             playlist_items.append(entry)
+            
+            # Increment counter and break if we've reached the limit
+            entry_count += 1
+            if entry_count >= max_entries:
+                break
         
         # Save to JSON file
         output_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "wfmu_playlists.json")
