@@ -114,15 +114,8 @@ def scrape_wfmu_playlists():
             if year <= 2024:
                 break
             
-            # Find the title (usually in bold)
-            title = ""
-            bold = li.find('b')
-            if bold:
-                title = bold.get_text(strip=True)
-            
             # Find the playlist link and listen URLs
             playlist_link = ""
-            m3u_url = ""
             popup_listen_url = ""
             
             # Find all links in the list item
@@ -133,27 +126,39 @@ def scrape_wfmu_playlists():
                 
                 if "See the playlist" in text:
                     playlist_link = "https://www.wfmu.org" + href
-                elif text == "MP3 - 128K" and href.endswith('.m3u'):
-                    m3u_url = "https://www.wfmu.org" + href
                 elif "Pop-up" in text and 'flashplayer.php' in href:
                     popup_listen_url = "https://www.wfmu.org" + href
             
-            # If no M3U URL is available but we have a popup URL, construct the M3U URL
-            if not m3u_url and popup_listen_url:
-                m3u_url = construct_m3u_url(popup_listen_url)
+            # Skip entries without a popup player URL
+            if not popup_listen_url:
+                continue
+            
+            # Find the title (usually in bold)
+            title = ""
+            bold = li.find('b')
+            if bold:
+                # Remove any links from the bold text to get clean title
+                for a in bold.find_all('a'):
+                    a.decompose()
+                title = bold.get_text(strip=True)
+                # Remove any trailing dots or spaces
+                title = title.rstrip('. ')
+            
+            # Construct M3U URL from popup URL
+            m3u_url = construct_m3u_url(popup_listen_url)
             
             # Get the actual MP3 URL from the M3U file
             mp3_listen_url = get_mp3_url_from_m3u(m3u_url)
             
             # Get the direct media URL from the flashplayer page
-            direct_media_url = get_media_url_from_flashplayer(popup_listen_url) if popup_listen_url else ""
+            direct_media_url = get_media_url_from_flashplayer(popup_listen_url)
             
-            # Extract show ID if available
+            # Extract show ID from popup URL
             show_id = ""
-            if m3u_url:
-                show_id_match = re.search(r'show=(\d+)', m3u_url)
-                if show_id_match:
-                    show_id = show_id_match.group(1)
+            if popup_listen_url:
+                parsed = urlparse(popup_listen_url)
+                params = parse_qs(parsed.query)
+                show_id = params.get('show', [''])[0]
             
             # Create playlist entry
             entry = {
