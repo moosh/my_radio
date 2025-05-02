@@ -54,7 +54,7 @@ async function getMediaUrlAndCue(popupUrl) {
   }
 }
 
-async function scrapeWfmuPlaylists(playlistUrl, maxEntries = 4) {
+async function scrapeWfmuPlaylists(playlistUrl, maxEntries = 4, progressCallback) {
   logProgress(`Starting scrape for: ${playlistUrl}`);
   try {
     const response = await axios.get(playlistUrl);
@@ -116,6 +116,7 @@ async function scrapeWfmuPlaylists(playlistUrl, maxEntries = 4) {
       return undefined;
     });
     logProgress(`Found ${playlistItems.length} playlist entries. Fetching media URLs...`);
+    if (progressCallback) progressCallback(0, playlistItems.length);
     for (let i = 0; i < playlistItems.length; i++) {
       const entry = playlistItems[i];
       logProgress(`Processing entry ${i + 1}/${playlistItems.length}: ${entry.title}`);
@@ -126,6 +127,7 @@ async function scrapeWfmuPlaylists(playlistUrl, maxEntries = 4) {
       logProgress(`  direct_media_url: ${url}`);
       logProgress(`  mp4_listen_url: ${entry.mp4_listen_url}`);
       logProgress(`  cue_start: ${cue_start}`);
+      if (progressCallback) progressCallback(i + 1, playlistItems.length);
     }
     logProgress('Scraping complete.');
     return {

@@ -32,7 +32,16 @@ contextBridge.exposeInMainWorld('electron', {
     ipcRenderer.removeListener(channel, callback);
   },
   fetchStreamMetadata: (url) => ipcRenderer.invoke('fetch-stream-metadata', url),
-  scrapeWfmuPlaylists: (url) => ipcRenderer.invoke('scrape-wfmu-playlists', url)
+  scrapeWfmuPlaylists: (url) => ipcRenderer.invoke('scrape-wfmu-playlists', url),
+  scrapeWfmuPlaylistsWithProgress: (url, progress) => {
+    // Listen for progress events
+    const progressChannel = 'wfmu-scrape-progress';
+    const handler = (_event, current, total) => progress(current, total);
+    ipcRenderer.on(progressChannel, handler);
+    return ipcRenderer.invoke('scrape-wfmu-playlists-with-progress', url).finally(() => {
+      ipcRenderer.removeListener(progressChannel, handler);
+    });
+  }
 });
 
 console.log('Preload script finished'); 

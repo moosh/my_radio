@@ -8,6 +8,7 @@ export interface ElectronAPI {
   off: (channel: string, callback: (...args: any[]) => void) => void;
   fetchStreamMetadata: (url: string) => Promise<any>;
   scrapeWfmuPlaylists: (url: string) => Promise<any>;
+  scrapeWfmuPlaylistsWithProgress: (url: string, progress: (current: number, total: number) => void) => Promise<any>;
 }
 
 declare global {

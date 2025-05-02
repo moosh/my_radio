@@ -10,6 +10,7 @@ import { PlayerStatus } from './components/PlayerStatus';
 //import { VectorArt } from './components/VectorArt';
 import { AudioVisualizer } from './components/AudioVisualizer';
 //import { scrapeWfmuPlaylists, WfmuPlaylistResult } from './utils/wfmuParser';
+import LinearProgress from '@mui/material/LinearProgress';
 
 // Create dark theme
 const darkTheme = createTheme({
@@ -89,6 +90,7 @@ function App() {
   const [openWfmuDialog, setOpenWfmuDialog] = useState(false);
   const [wfmuUrl, setWfmuUrl] = useState('');
   const [wfmuLoading, setWfmuLoading] = useState(false);
+  const [wfmuProgress, setWfmuProgress] = useState({ current: 0, total: 0 });
 
   // Add keyboard shortcut for toggling debug console
   useEffect(() => {
@@ -362,9 +364,12 @@ function App() {
 
   const handleWfmuDialogOk = async () => {
     setWfmuLoading(true);
+    setWfmuProgress({ current: 0, total: 0 });
     try {
       // Use the Electron main process to scrape (avoids CORS)
-      const result = await window.electron.scrapeWfmuPlaylists(wfmuUrl);
+      const result = await window.electron.scrapeWfmuPlaylistsWithProgress(wfmuUrl, (current, total) => {
+        setWfmuProgress({ current, total });
+      });
       if (window.electron && window.electron.saveStationsData) {
         const json = JSON.stringify(result, null, 2);
         // Save to wfmu_shows.json in the preferences directory
@@ -378,6 +383,7 @@ function App() {
       console.log('[WFMU Parser] Error: ' + (err instanceof Error ? err.message : String(err)));
     } finally {
       setWfmuLoading(false);
+      setWfmuProgress({ current: 0, total: 0 });
     }
     setOpenWfmuDialog(false);
   };
@@ -522,6 +528,14 @@ function App() {
                   fullWidth
                   placeholder="https://www.wfmu.org/playlists/LM"
                 />
+                {wfmuLoading && (
+                  <Box sx={{ mt: 2 }}>
+                    <LinearProgress variant={wfmuProgress.total > 0 ? 'determinate' : 'indeterminate'} value={wfmuProgress.total > 0 ? (wfmuProgress.current / wfmuProgress.total) * 100 : undefined} />
+                    <Box sx={{ mt: 1, textAlign: 'center' }}>
+                      {wfmuProgress.total > 0 ? `Processing ${wfmuProgress.current} of ${wfmuProgress.total}` : 'Starting...'}
+                    </Box>
+                  </Box>
+                )}
               </Box>
             </DialogContent>
             <DialogActions>
