@@ -11,9 +11,9 @@ contextBridge.exposeInMainWorld('electron', {
     console.log('getStationsData called');
     return ipcRenderer.invoke('get-stations-data');
   },
-  saveStationsData: (data) => {
+  saveStationsData: (data, filename) => {
     console.log('saveStationsData called');
-    return ipcRenderer.invoke('save-stations-data', data);
+    return ipcRenderer.invoke('save-stations-data', data, filename);
   },
   openMapWindow: () => {
     console.log('openMapWindow called');
@@ -31,7 +31,8 @@ contextBridge.exposeInMainWorld('electron', {
     console.log('off called for channel:', channel);
     ipcRenderer.removeListener(channel, callback);
   },
-  fetchStreamMetadata: (url) => ipcRenderer.invoke('fetch-stream-metadata', url)
+  fetchStreamMetadata: (url) => ipcRenderer.invoke('fetch-stream-metadata', url),
+  scrapeWfmuPlaylists: (url) => ipcRenderer.invoke('scrape-wfmu-playlists', url)
 });
 
 console.log('Preload script finished'); 

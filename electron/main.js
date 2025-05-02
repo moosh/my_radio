@@ -4,6 +4,7 @@ const isDev = require('electron-is-dev');
 const fs = require('fs');
 const https = require('https');
 const http = require('http');
+const { scrapeWfmuPlaylists } = require('./wfmuParserNode');
 
 let mainWindow;
 let mapWindow;
@@ -99,21 +100,25 @@ ipcMain.handle('get-stations-data', () => {
 });
 
 // Handle saving stations data
-ipcMain.handle('save-stations-data', async (event, data) => {
-  const stationsPath = getStationsPath();
-  console.log('Saving stations to:', stationsPath);
-
+ipcMain.handle('save-stations-data', async (event, data, filename) => {
+  let filePath;
+  if (filename) {
+    filePath = isDev
+      ? path.join(__dirname, '..', filename)
+      : path.join(app.getPath('appData'), 'my_radio', filename);
+  } else {
+    filePath = getStationsPath();
+  }
+  console.log('Saving stations to:', filePath);
   try {
     // Ensure directory exists in production
     if (!isDev) {
-      const dir = path.dirname(stationsPath);
+      const dir = path.dirname(filePath);
       if (!fs.existsSync(dir)) {
         fs.mkdirSync(dir, { recursive: true });
       }
     }
-
-    // Write the data
-    fs.writeFileSync(stationsPath, data, 'utf8');
+    fs.writeFileSync(filePath, data, 'utf8');
     console.log('Successfully saved stations file');
     return true;
   } catch (error) {
@@ -230,4 +235,9 @@ ipcMain.handle('fetch-stream-metadata', async (event, url) => {
       reject(error);
     });
   });
+});
+
+// Handle scraping WFMU playlists in the main process
+ipcMain.handle('scrape-wfmu-playlists', async (event, url) => {
+  return await scrapeWfmuPlaylists(url);
 }); 

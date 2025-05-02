@@ -9,6 +9,7 @@ import { Station, DayPlayStats } from './types/Station';
 import { PlayerStatus } from './components/PlayerStatus';
 //import { VectorArt } from './components/VectorArt';
 import { AudioVisualizer } from './components/AudioVisualizer';
+import { scrapeWfmuPlaylists, WfmuPlaylistResult } from './utils/wfmuParser';
 
 // Create dark theme
 const darkTheme = createTheme({
@@ -87,6 +88,7 @@ function App() {
   const audioRef = useRef<HTMLAudioElement>(null);
   const [openWfmuDialog, setOpenWfmuDialog] = useState(false);
   const [wfmuUrl, setWfmuUrl] = useState('');
+  const [wfmuLoading, setWfmuLoading] = useState(false);
 
   // Add keyboard shortcut for toggling debug console
   useEffect(() => {
@@ -358,6 +360,27 @@ function App() {
     }
   };
 
+  const handleWfmuDialogOk = async () => {
+    setWfmuLoading(true);
+    try {
+      // Use the Electron main process to scrape (avoids CORS)
+      const result = await window.electron.scrapeWfmuPlaylists(wfmuUrl);
+      if (window.electron && window.electron.saveStationsData) {
+        const json = JSON.stringify(result, null, 2);
+        await window.electron.saveStationsData(json, 'wfmu_playlists.json');
+        console.log('[WFMU Parser] Saved result to wfmu_playlists.json');
+      } else {
+        console.log('[WFMU Parser] Electron API not available, cannot save file.');
+      }
+      console.log('[WFMU Parser] Scraping complete.');
+    } catch (err) {
+      console.log('[WFMU Parser] Error: ' + (err instanceof Error ? err.message : String(err)));
+    } finally {
+      setWfmuLoading(false);
+    }
+    setOpenWfmuDialog(false);
+  };
+
   return (
     <ThemeProvider theme={darkTheme}>
       <Box sx={{ bgcolor: 'background.default', minHeight: '100vh', py: 4 }}>
@@ -501,8 +524,8 @@ function App() {
               </Box>
             </DialogContent>
             <DialogActions>
-              <Button onClick={() => setOpenWfmuDialog(false)}>Cancel</Button>
-              <Button onClick={() => setOpenWfmuDialog(false)} variant="contained">OK</Button>
+              <Button onClick={() => setOpenWfmuDialog(false)} disabled={wfmuLoading}>Cancel</Button>
+              <Button onClick={handleWfmuDialogOk} variant="contained" disabled={wfmuLoading || !wfmuUrl}>OK</Button>
             </DialogActions>
           </Dialog>
 
