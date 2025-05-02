@@ -94,6 +94,7 @@ function App() {
   const [wfmuProgress, setWfmuProgress] = useState({ current: 0, total: 0 });
   const [playlistCards, setPlaylistCards] = useState<{ name: string, shows: PlaylistShowEntry[] }[]>([]);
   const [currentlyPlayingPlaylistUrl, setCurrentlyPlayingPlaylistUrl] = useState<string | null>(null);
+  const [currentlyPlayingPlaylistShow, setCurrentlyPlayingPlaylistShow] = useState<PlaylistShowEntry | null>(null);
 
   // Add keyboard shortcut for toggling debug console
   useEffect(() => {
@@ -425,6 +426,9 @@ function App() {
       audio.currentTime = startSeconds;
       audio.play();
       setCurrentlyPlayingPlaylistUrl(show.mp4_listen_url);
+      // Find the playlist name for this show
+      const playlist = playlistCards.find(card => card.shows.some(s => s.mp4_listen_url === show.mp4_listen_url));
+      setCurrentlyPlayingPlaylistShow({ ...show, playlistName: playlist ? playlist.name : undefined });
     }
   };
 
@@ -480,7 +484,16 @@ function App() {
           )}
 
           <PlayerStatus 
-            currentStation={items.find(item => item.id === currentlyPlayingId) || null}
+            currentStation={currentlyPlayingPlaylistShow ? {
+              id: currentlyPlayingPlaylistShow.mp4_listen_url,
+              title: currentlyPlayingPlaylistShow.playlistName
+                ? `${currentlyPlayingPlaylistShow.playlistName} — ${currentlyPlayingPlaylistShow.title}`
+                : currentlyPlayingPlaylistShow.title,
+              url: currentlyPlayingPlaylistShow.mp4_listen_url,
+              description: currentlyPlayingPlaylistShow.date + (currentlyPlayingPlaylistShow.cue_start ? ` (Start: ${currentlyPlayingPlaylistShow.cue_start})` : ''),
+              tags: [],
+              createdAt: new Date(),
+            } : items.find(item => item.id === currentlyPlayingId) || null}
             audioElement={audioRef.current}
             onPlayPause={handlePlayPause}
           />
