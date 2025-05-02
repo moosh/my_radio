@@ -60,6 +60,17 @@ async function scrapeWfmuPlaylists(playlistUrl, maxEntries, progressCallback) {
     const response = await axios.get(playlistUrl);
     logProgress('Fetched playlist page HTML.');
     const $ = cheerio.load(response.data);
+
+    // Extract playlist name from <link rel="alternate" ... title="..."> tag
+    let playlistName = '';
+    const rssLink = $('link[rel="alternate"][type="application/rss+xml"][title]');
+    if (rssLink.length) {
+      const titleAttr = rssLink.attr('title') || '';
+      // Remove leading 'WFMU Playlists for ' if present
+      playlistName = titleAttr.replace(/^WFMU Playlists for /i, '').replace(/ with .+$/, '').trim();
+      if (!playlistName) playlistName = titleAttr.trim();
+    }
+
     const playlistItems = [];
     const datePattern = /([A-Za-z]+ \d+,? (\d{4}))/;
     let entryCount = 0;
@@ -131,6 +142,7 @@ async function scrapeWfmuPlaylists(playlistUrl, maxEntries, progressCallback) {
     }
     logProgress('Scraping complete.');
     return {
+      playlist_name: playlistName,
       last_updated: new Date().toISOString(),
       source_url: playlistUrl,
       playlists: playlistItems,

@@ -383,7 +383,7 @@ function App() {
         setPlaylistCards(prev => [
           ...prev,
           {
-            name: result.playlists[0].title || 'WFMU Playlist',
+            name: result.playlist_name || 'WFMU Playlist',
             shows: result.playlists.map((entry: any) => ({
               date: entry.date,
               title: entry.title,
