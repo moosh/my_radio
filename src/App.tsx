@@ -269,6 +269,22 @@ function App() {
   };
 
   const handlePlayPause = async (stationId: string) => {
+    // If a playlist show is currently playing
+    if (currentlyPlayingPlaylistShow && currentlyPlayingPlaylistShow.mp4_listen_url === stationId) {
+      const audio = audioRef.current;
+      if (!audio) return;
+      if (!audio.paused) {
+        audio.pause();
+        setCurrentlyPlayingPlaylistUrl(null);
+        setCurrentlyPlayingPlaylistShow(null);
+      } else {
+        audio.play();
+        setCurrentlyPlayingPlaylistUrl(currentlyPlayingPlaylistShow.mp4_listen_url);
+        // No need to setCurrentlyPlayingPlaylistShow again, it's already set
+      }
+      return;
+    }
+
     const station = items.find(item => item.id === stationId);
     if (!station || !audioRef.current) return;
 
