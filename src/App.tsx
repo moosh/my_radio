@@ -93,6 +93,7 @@ function App() {
   const [wfmuLoading, setWfmuLoading] = useState(false);
   const [wfmuProgress, setWfmuProgress] = useState({ current: 0, total: 0 });
   const [playlistCards, setPlaylistCards] = useState<{ name: string, shows: PlaylistShowEntry[] }[]>([]);
+  const [currentlyPlayingPlaylistUrl, setCurrentlyPlayingPlaylistUrl] = useState<string | null>(null);
 
   // Add keyboard shortcut for toggling debug console
   useEffect(() => {
@@ -406,12 +407,24 @@ function App() {
   // Handler to play a show from PlaylistCard
   const handlePlayPlaylistShow = (show: PlaylistShowEntry) => {
     if (!show.mp4_listen_url) return;
-    // Use the same audio element as StationCard, or implement your own logic
     const audio = audioRef.current;
     if (audio) {
       audio.src = show.mp4_listen_url;
-      audio.currentTime = 0;
+      // Parse cue_start (e.g., '0:7:32' or '7:32') to seconds
+      let startSeconds = 0;
+      if (show.cue_start) {
+        const parts = show.cue_start.split(':').map(Number);
+        if (parts.length === 3) {
+          startSeconds = parts[0] * 3600 + parts[1] * 60 + parts[2];
+        } else if (parts.length === 2) {
+          startSeconds = parts[0] * 60 + parts[1];
+        } else if (parts.length === 1) {
+          startSeconds = parts[0];
+        }
+      }
+      audio.currentTime = startSeconds;
       audio.play();
+      setCurrentlyPlayingPlaylistUrl(show.mp4_listen_url);
     }
   };
 
@@ -580,6 +593,7 @@ function App() {
               playlistName={playlist.name}
               shows={playlist.shows}
               onPlay={handlePlayPlaylistShow}
+              currentlyPlayingUrl={currentlyPlayingPlaylistUrl}
             />
           ))}
         </Container>
