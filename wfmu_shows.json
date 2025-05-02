@@ -1,5 +1,5 @@
 {
-  "last_updated": "2025-05-02T22:04:12.249Z",
+  "last_updated": "2025-05-02T22:06:01.790Z",
   "source_url": "https://www.wfmu.org/playlists/LM",
   "playlists": [
     {
@@ -49,6 +49,138 @@
       "mp4_listen_url": "https://s3.amazonaws.com/arch.wfmu.org/LM/lm250403.mp4",
       "cue_start": "0:7:40",
       "raw_text": "April 3, 2025:\nit's a stand in\n|\nSee the playlist\n| Listen:  Pop-up player!"
+    },
+    {
+      "date": "March 20, 2025",
+      "title": "\"By giving voice to the cognitive dissonance required to be a woman under the patriarchy, you robbed it of its power.\"- Barbie",
+      "show_id": "150238",
+      "archive_id": "267684",
+      "playlist_link": "https://www.wfmu.org/playlists/shows/150238",
+      "popup_listen_url": "https://www.wfmu.org/flashplayer.php?version=3&show=150238&archive=267684",
+      "direct_media_url": "rtmpt://rtmp.wfmu.org/cfx/st/mp4:LM/lm250320.mp4",
+      "mp4_listen_url": "https://s3.amazonaws.com/arch.wfmu.org/LM/lm250320.mp4",
+      "cue_start": "0:7:12",
+      "raw_text": "March 20, 2025:\n\"By giving voice to the cognitive dissonance required to be a woman under the patriarchy, you robbed it of its power.\"- Barbie\n|\nSee the playlist\n| Listen:  Pop-up player!"
+    },
+    {
+      "date": "March 13, 2025",
+      "title": "lovegaze dreamer fundraising week #2 with Therese",
+      "show_id": "149991",
+      "archive_id": "267360",
+      "playlist_link": "https://www.wfmu.org/playlists/shows/149991",
+      "popup_listen_url": "https://www.wfmu.org/flashplayer.php?version=3&show=149991&archive=267360",
+      "direct_media_url": "rtmpt://rtmp.wfmu.org/cfx/st/mp4:LM/lm250313.mp4",
+      "mp4_listen_url": "https://s3.amazonaws.com/arch.wfmu.org/LM/lm250313.mp4",
+      "cue_start": "0:7:32",
+      "raw_text": "March 13, 2025:\nlovegaze dreamer fundraising week #2 with Therese\n|\nSee the playlist\n| Listen:  Pop-up player!"
+    },
+    {
+      "date": "March 6, 2025",
+      "title": "Sweet Emotion Fundraising Week #1 with Marty McSorley",
+      "show_id": "149794",
+      "archive_id": "267022",
+      "playlist_link": "https://www.wfmu.org/playlists/shows/149794",
+      "popup_listen_url": "https://www.wfmu.org/flashplayer.php?version=3&show=149794&archive=267022",
+      "direct_media_url": "rtmpt://rtmp.wfmu.org/cfx/st/mp4:LM/lm250306.mp4",
+      "mp4_listen_url": "https://s3.amazonaws.com/arch.wfmu.org/LM/lm250306.mp4",
+      "cue_start": "0:8:40",
+      "raw_text": "March 6, 2025:\nSweet Emotion Fundraising Week #1 with Marty McSorley\n|\nSee the playlist\n| Listen:  Pop-up player!"
+    },
+    {
+      "date": "February 27, 2025",
+      "title": "“What kept me sane was knowing that things would change, and it was a question of keeping myself together until they did.\" - Nina Simone",
+      "show_id": "149558",
+      "archive_id": "266673",
+      "playlist_link": "https://www.wfmu.org/playlists/shows/149558",
+      "popup_listen_url": "https://www.wfmu.org/flashplayer.php?version=3&show=149558&archive=266673",
+      "direct_media_url": "rtmpt://rtmp.wfmu.org/cfx/st/mp4:LM/lm250227.mp4",
+      "mp4_listen_url": "https://s3.amazonaws.com/arch.wfmu.org/LM/lm250227.mp4",
+      "cue_start": "0:7:8",
+      "raw_text": "February 27, 2025:\n “What kept me sane was knowing that things would change, and it was a question of keeping myself together until they did.\" - Nina Simone\n|\nSee the playlist\n| Listen:  Pop-up player!"
+    },
+    {
+      "date": "February 20, 2025",
+      "title": "breathe in the authority of your human citizenship",
+      "show_id": "149335",
+      "archive_id": "266345",
+      "playlist_link": "https://www.wfmu.org/playlists/shows/149335",
+      "popup_listen_url": "https://www.wfmu.org/flashplayer.php?version=3&show=149335&archive=266345",
+      "direct_media_url": "rtmpt://rtmp.wfmu.org/cfx/st/mp4:LM/lm250220.mp4",
+      "mp4_listen_url": "https://s3.amazonaws.com/arch.wfmu.org/LM/lm250220.mp4",
+      "cue_start": "0:7:17",
+      "raw_text": "February 20, 2025:\nbreathe in the authority of your human citizenship\n|\nSee the playlist\n| Listen:  Pop-up player!"
+    },
+    {
+      "date": "February 13, 2025",
+      "title": "Black History",
+      "show_id": "149064",
+      "archive_id": "266000",
+      "playlist_link": "https://www.wfmu.org/playlists/shows/149064",
+      "popup_listen_url": "https://www.wfmu.org/flashplayer.php?version=3&show=149064&archive=266000",
+      "direct_media_url": "rtmpt://rtmp.wfmu.org/cfx/st/mp4:LM/lm250213.mp4",
+      "mp4_listen_url": "https://s3.amazonaws.com/arch.wfmu.org/LM/lm250213.mp4",
+      "cue_start": "0:7:3",
+      "raw_text": "February 13, 2025:\nBlack History\n|\nSee the playlist\n| Listen:  Pop-up player!"
+    },
+    {
+      "date": "February 6, 2025",
+      "title": "practice saying NO",
+      "show_id": "148860",
+      "archive_id": "265653",
+      "playlist_link": "https://www.wfmu.org/playlists/shows/148860",
+      "popup_listen_url": "https://www.wfmu.org/flashplayer.php?version=3&show=148860&archive=265653",
+      "direct_media_url": "rtmpt://rtmp.wfmu.org/cfx/st/mp4:LM/lm250206.mp4",
+      "mp4_listen_url": "https://s3.amazonaws.com/arch.wfmu.org/LM/lm250206.mp4",
+      "cue_start": "0:7:14",
+      "raw_text": "February 6, 2025:\npractice saying NO\n|\nSee the playlist\n| Listen:  Pop-up player!"
+    },
+    {
+      "date": "January 30, 2025",
+      "title": "know your rights",
+      "show_id": "148576",
+      "archive_id": "265317",
+      "playlist_link": "https://www.wfmu.org/playlists/shows/148576",
+      "popup_listen_url": "https://www.wfmu.org/flashplayer.php?version=3&show=148576&archive=265317",
+      "direct_media_url": "rtmpt://rtmp.wfmu.org/cfx/st/mp4:LM/lm250130.mp4",
+      "mp4_listen_url": "https://s3.amazonaws.com/arch.wfmu.org/LM/lm250130.mp4",
+      "cue_start": "0:7:21",
+      "raw_text": "January 30, 2025:\nknow your rights\n|\nSee the playlist\n| Listen:  Pop-up player!"
+    },
+    {
+      "date": "January 16, 2025",
+      "title": "sister outsider",
+      "show_id": "148160",
+      "archive_id": "264636",
+      "playlist_link": "https://www.wfmu.org/playlists/shows/148160",
+      "popup_listen_url": "https://www.wfmu.org/flashplayer.php?version=3&show=148160&archive=264636",
+      "direct_media_url": "rtmpt://rtmp.wfmu.org/cfx/st/mp4:LM/lm250116.mp4",
+      "mp4_listen_url": "https://s3.amazonaws.com/arch.wfmu.org/LM/lm250116.mp4",
+      "cue_start": "0:7:22",
+      "raw_text": "January 16, 2025:\nsister outsider\n|\nSee the playlist\n| Listen:  Pop-up player!"
+    },
+    {
+      "date": "January 9, 2025",
+      "title": "“The imperialist wears a mask and his face grows to fit it.” - George Orwell",
+      "show_id": "147892",
+      "archive_id": "264279",
+      "playlist_link": "https://www.wfmu.org/playlists/shows/147892",
+      "popup_listen_url": "https://www.wfmu.org/flashplayer.php?version=3&show=147892&archive=264279",
+      "direct_media_url": "rtmpt://rtmp.wfmu.org/cfx/st/mp4:LM/lm250109.mp4",
+      "mp4_listen_url": "https://s3.amazonaws.com/arch.wfmu.org/LM/lm250109.mp4",
+      "cue_start": "0:6:54",
+      "raw_text": "January 9, 2025:\n“The imperialist wears a mask and his face grows to fit it.” - George Orwell\n|\nSee the playlist\n| Listen:  Pop-up player!"
+    },
+    {
+      "date": "January 2, 2025",
+      "title": "art is",
+      "show_id": "147693",
+      "archive_id": "263943",
+      "playlist_link": "https://www.wfmu.org/playlists/shows/147693",
+      "popup_listen_url": "https://www.wfmu.org/flashplayer.php?version=3&show=147693&archive=263943",
+      "direct_media_url": "rtmpt://rtmp.wfmu.org/cfx/st/mp4:LM/lm250102.mp4",
+      "mp4_listen_url": "https://s3.amazonaws.com/arch.wfmu.org/LM/lm250102.mp4",
+      "cue_start": "0:7:18",
+      "raw_text": "January 2, 2025:\nart is...\n|\nSee the playlist\n| Listen:  Pop-up player!"
     }
   ]
 }

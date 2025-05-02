@@ -244,7 +244,6 @@ ipcMain.handle('scrape-wfmu-playlists', async (event, url) => {
 
 // Handle scraping WFMU playlists with progress reporting
 ipcMain.handle('scrape-wfmu-playlists-with-progress', async (event, url) => {
-  // Patch logProgress to emit progress events
   const progressChannel = 'wfmu-scrape-progress';
   let lastCurrent = 0;
   let lastTotal = 0;
@@ -253,9 +252,8 @@ ipcMain.handle('scrape-wfmu-playlists-with-progress', async (event, url) => {
     lastTotal = total;
     event.sender.send(progressChannel, current, total);
   }
-  // Patch the parser to accept a progress callback
-  const result = await scrapeWfmuPlaylists(url, 4, progressCallback);
-  // Ensure final progress is sent
+  // Remove the 4 item limit by not passing maxEntries
+  const result = await scrapeWfmuPlaylists(url, undefined, progressCallback);
   if (lastTotal > 0 && lastCurrent !== lastTotal) {
     event.sender.send(progressChannel, lastTotal, lastTotal);
   }

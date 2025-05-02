@@ -54,7 +54,7 @@ async function getMediaUrlAndCue(popupUrl) {
   }
 }
 
-async function scrapeWfmuPlaylists(playlistUrl, maxEntries = 4, progressCallback) {
+async function scrapeWfmuPlaylists(playlistUrl, maxEntries, progressCallback) {
   logProgress(`Starting scrape for: ${playlistUrl}`);
   try {
     const response = await axios.get(playlistUrl);
@@ -112,7 +112,7 @@ async function scrapeWfmuPlaylists(playlistUrl, maxEntries = 4, progressCallback
         raw_text: text,
       });
       entryCount++;
-      if (entryCount >= maxEntries) return false;
+      if (maxEntries && entryCount >= maxEntries) return false;
       return undefined;
     });
     logProgress(`Found ${playlistItems.length} playlist entries. Fetching media URLs...`);
