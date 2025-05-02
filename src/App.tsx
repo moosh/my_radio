@@ -11,6 +11,7 @@ import { PlayerStatus } from './components/PlayerStatus';
 import { AudioVisualizer } from './components/AudioVisualizer';
 //import { scrapeWfmuPlaylists, WfmuPlaylistResult } from './utils/wfmuParser';
 import LinearProgress from '@mui/material/LinearProgress';
+import PlaylistCard, { PlaylistShowEntry } from './components/PlaylistCard';
 
 // Create dark theme
 const darkTheme = createTheme({
@@ -91,6 +92,7 @@ function App() {
   const [wfmuUrl, setWfmuUrl] = useState('');
   const [wfmuLoading, setWfmuLoading] = useState(false);
   const [wfmuProgress, setWfmuProgress] = useState({ current: 0, total: 0 });
+  const [playlistCards, setPlaylistCards] = useState<{ name: string, shows: PlaylistShowEntry[] }[]>([]);
 
   // Add keyboard shortcut for toggling debug console
   useEffect(() => {
@@ -366,17 +368,30 @@ function App() {
     setWfmuLoading(true);
     setWfmuProgress({ current: 0, total: 0 });
     try {
-      // Use the Electron main process to scrape (avoids CORS)
       const result = await window.electron.scrapeWfmuPlaylistsWithProgress(wfmuUrl, (current, total) => {
         setWfmuProgress({ current, total });
       });
       if (window.electron && window.electron.saveStationsData) {
         const json = JSON.stringify(result, null, 2);
-        // Save to wfmu_shows.json in the preferences directory
         await window.electron.saveStationsData(json, 'wfmu_shows.json');
         console.log('[WFMU Parser] Saved result to wfmu_shows.json');
       } else {
         console.log('[WFMU Parser] Electron API not available, cannot save file.');
+      }
+      // Add PlaylistCard to the main list
+      if (result && result.playlists && result.playlists.length > 0) {
+        setPlaylistCards(prev => [
+          ...prev,
+          {
+            name: result.playlists[0].title || 'WFMU Playlist',
+            shows: result.playlists.map((entry: any) => ({
+              date: entry.date,
+              title: entry.title,
+              mp4_listen_url: entry.mp4_listen_url,
+              cue_start: entry.cue_start,
+            }))
+          }
+        ]);
       }
       console.log('[WFMU Parser] Scraping complete.');
     } catch (err) {
@@ -386,6 +401,18 @@ function App() {
       setWfmuProgress({ current: 0, total: 0 });
     }
     setOpenWfmuDialog(false);
+  };
+
+  // Handler to play a show from PlaylistCard
+  const handlePlayPlaylistShow = (show: PlaylistShowEntry) => {
+    if (!show.mp4_listen_url) return;
+    // Use the same audio element as StationCard, or implement your own logic
+    const audio = audioRef.current;
+    if (audio) {
+      audio.src = show.mp4_listen_url;
+      audio.currentTime = 0;
+      audio.play();
+    }
   };
 
   return (
@@ -545,6 +572,16 @@ function App() {
           </Dialog>
 
           {showDebugConsole && <DebugConsole messages={debugMessages} />}
+
+          {/* Render PlaylistCards after scraping */}
+          {playlistCards.map((playlist, idx) => (
+            <PlaylistCard
+              key={playlist.name + idx}
+              playlistName={playlist.name}
+              shows={playlist.shows}
+              onPlay={handlePlayPlaylistShow}
+            />
+          ))}
         </Container>
       </Box>
     </ThemeProvider>
