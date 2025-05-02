@@ -391,8 +391,17 @@ function App() {
       });
       if (window.electron && window.electron.saveStationsData) {
         const json = JSON.stringify(result, null, 2);
-        await window.electron.saveStationsData(json, 'wfmu_shows.json');
-        console.log('[WFMU Parser] Saved result to wfmu_shows.json');
+        // Extract initials from the wfmuUrl (e.g., LM from https://www.wfmu.org/playlists/LM)
+        let initials = '';
+        const match = wfmuUrl.match(/playlists\/(\w{2})/i);
+        if (match) {
+          initials = match[1].toLowerCase();
+        } else {
+          initials = 'wfmu';
+        }
+        const filename = `wfmu_shows_${initials}.json`;
+        await window.electron.saveStationsData(json, filename);
+        console.log(`[WFMU Parser] Saved result to ${filename}`);
       } else {
         console.log('[WFMU Parser] Electron API not available, cannot save file.');
       }
