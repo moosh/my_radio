@@ -407,30 +407,54 @@ function App() {
 
   // Handler to play a show from PlaylistCard
   const handlePlayPlaylistShow = (show: PlaylistShowEntry) => {
-    if (!show.mp4_listen_url) return;
     const audio = audioRef.current;
-    if (audio) {
-      audio.src = show.mp4_listen_url;
-      // Parse cue_start (e.g., '0:7:32' or '7:32') to seconds
-      let startSeconds = 0;
-      if (show.cue_start) {
-        const parts = show.cue_start.split(':').map(Number);
-        if (parts.length === 3) {
-          startSeconds = parts[0] * 3600 + parts[1] * 60 + parts[2];
-        } else if (parts.length === 2) {
-          startSeconds = parts[0] * 60 + parts[1];
-        } else if (parts.length === 1) {
-          startSeconds = parts[0];
-        }
-      }
-      audio.currentTime = startSeconds;
-      audio.play();
-      setCurrentlyPlayingPlaylistUrl(show.mp4_listen_url);
-      // Find the playlist name for this show
-      const playlist = playlistCards.find(card => card.shows.some(s => s.mp4_listen_url === show.mp4_listen_url));
-      setCurrentlyPlayingPlaylistShow({ ...show, playlistName: playlist ? playlist.name : undefined });
+    if (!show.mp4_listen_url || !audio) return;
+
+    // If this show is already playing, pause/stop it
+    if (currentlyPlayingPlaylistUrl === show.mp4_listen_url && !audio.paused) {
+      audio.pause();
+      setCurrentlyPlayingPlaylistUrl(null);
+      setCurrentlyPlayingPlaylistShow(null);
+      return;
     }
+
+    // Otherwise, play the show from the cue
+    audio.src = show.mp4_listen_url;
+    let startSeconds = 0;
+    if (show.cue_start) {
+      const parts = show.cue_start.split(':').map(Number);
+      if (parts.length === 3) {
+        startSeconds = parts[0] * 3600 + parts[1] * 60 + parts[2];
+      } else if (parts.length === 2) {
+        startSeconds = parts[0] * 60 + parts[1];
+      } else if (parts.length === 1) {
+        startSeconds = parts[0];
+      }
+    }
+    audio.currentTime = startSeconds;
+    audio.play();
+    setCurrentlyPlayingPlaylistUrl(show.mp4_listen_url);
+    const playlist = playlistCards.find(card => card.shows.some(s => s.mp4_listen_url === show.mp4_listen_url));
+    setCurrentlyPlayingPlaylistShow({ ...show, playlistName: playlist ? playlist.name : undefined });
   };
+
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    const handleAudioStop = () => {
+      setCurrentlyPlayingPlaylistUrl(null);
+      setCurrentlyPlayingPlaylistShow(null);
+    };
+
+    audio.addEventListener('pause', handleAudioStop);
+    audio.addEventListener('ended', handleAudioStop);
+
+    return () => {
+      audio.removeEventListener('pause', handleAudioStop);
+      audio.removeEventListener('ended', handleAudioStop);
+    };
+  }, [audioRef]);
 
   return (
     <ThemeProvider theme={darkTheme}>
