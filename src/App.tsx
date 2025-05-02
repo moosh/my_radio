@@ -9,7 +9,7 @@ import { Station, DayPlayStats } from './types/Station';
 import { PlayerStatus } from './components/PlayerStatus';
 //import { VectorArt } from './components/VectorArt';
 import { AudioVisualizer } from './components/AudioVisualizer';
-import { scrapeWfmuPlaylists, WfmuPlaylistResult } from './utils/wfmuParser';
+//import { scrapeWfmuPlaylists, WfmuPlaylistResult } from './utils/wfmuParser';
 
 // Create dark theme
 const darkTheme = createTheme({
@@ -367,8 +367,9 @@ function App() {
       const result = await window.electron.scrapeWfmuPlaylists(wfmuUrl);
       if (window.electron && window.electron.saveStationsData) {
         const json = JSON.stringify(result, null, 2);
-        await window.electron.saveStationsData(json, 'wfmu_playlists.json');
-        console.log('[WFMU Parser] Saved result to wfmu_playlists.json');
+        // Save to wfmu_shows.json in the preferences directory
+        await window.electron.saveStationsData(json, 'wfmu_shows.json');
+        console.log('[WFMU Parser] Saved result to wfmu_shows.json');
       } else {
         console.log('[WFMU Parser] Electron API not available, cannot save file.');
       }
