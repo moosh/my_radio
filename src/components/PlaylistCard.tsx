@@ -10,6 +10,7 @@ export interface PlaylistShowEntry {
   title: string;
   mp4_listen_url: string;
   cue_start?: string | null;
+  playlistName?: string;
 }
 
 export interface PlaylistCardProps {
