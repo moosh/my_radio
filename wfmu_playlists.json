@@ -1,5 +1,5 @@
 {
-  "last_updated": "2025-05-01T17:43:54.438303",
+  "last_updated": "2025-05-02T10:16:46.101666",
   "source_url": "https://www.wfmu.org/playlists/LM",
   "playlists": [
     {
@@ -11,6 +11,7 @@
       "popup_listen_url": "https://www.wfmu.org/flashplayer.php?version=3&show=151581&archive=269718",
       "direct_media_url": "rtmpt://rtmp.wfmu.org/cfx/st/mp4:LM/lm250501.mp4",
       "mp4_listen_url": "https://s3.amazonaws.com/arch.wfmu.org/LM/lm250501.mp4",
+      "cue_start": "0:7:38",
       "raw_text": "Pop-up player!"
     },
     {
@@ -22,6 +23,7 @@
       "popup_listen_url": "https://www.wfmu.org/flashplayer.php?version=3&show=151390&archive=269366",
       "direct_media_url": "rtmpt://rtmp.wfmu.org/cfx/st/mp4:LM/lm250424.mp4",
       "mp4_listen_url": "https://s3.amazonaws.com/arch.wfmu.org/LM/lm250424.mp4",
+      "cue_start": "0:7:32",
       "raw_text": "Pop-up player!"
     },
     {
@@ -33,6 +35,7 @@
       "popup_listen_url": "https://www.wfmu.org/flashplayer.php?version=3&show=150929&archive=268698",
       "direct_media_url": "rtmpt://rtmp.wfmu.org/cfx/st/mp4:LM/lm250410.mp4",
       "mp4_listen_url": "https://s3.amazonaws.com/arch.wfmu.org/LM/lm250410.mp4",
+      "cue_start": "0:7:29",
       "raw_text": "Pop-up player!"
     },
     {
@@ -44,6 +47,7 @@
       "popup_listen_url": "https://www.wfmu.org/flashplayer.php?version=3&show=150929&archive=268698",
       "direct_media_url": "rtmpt://rtmp.wfmu.org/cfx/st/mp4:LM/lm250410.mp4",
       "mp4_listen_url": "https://s3.amazonaws.com/arch.wfmu.org/LM/lm250410.mp4",
+      "cue_start": "0:7:29",
       "raw_text": "Pop-up player!"
     }
   ]

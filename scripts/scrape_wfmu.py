@@ -8,33 +8,43 @@ import os
 from urllib.parse import urlparse, parse_qs
 
 def get_media_url_from_flashplayer(popup_url):
-    """Extract the direct media URL from the flashplayer.php page."""
+    """Extract the direct media URL and cue start time from the flashplayer.php page."""
     if not popup_url:
-        return ""
-        
+        return "", None
     try:
         response = requests.get(popup_url)
         response.raise_for_status()
-        
         # Find the playlist-data textarea
         soup = BeautifulSoup(response.text, 'html.parser')
         playlist_data = soup.find('textarea', {'id': 'playlist-data'})
-        
         if not playlist_data:
-            return ""
-            
+            return "", None
         # Parse the JSON data
         try:
             data = json.loads(playlist_data.string.strip())
-            if data and 'audio' in data and '@attributes' in data['audio']:
-                return data['audio']['@attributes']['url']
+            cue_start = None
+            # Prefer the offset field in top-level @attributes
+            if '@attributes' in data and 'offset' in data['@attributes']:
+                cue_start = data['@attributes']['offset']
+            # Fallbacks: check audio attributes for cue/start
+            if cue_start is None and 'audio' in data and '@attributes' in data['audio']:
+                cue_start = data['audio']['@attributes'].get('cue')
+                if cue_start is None:
+                    cue_start = data['audio']['@attributes'].get('start')
+            # Fallbacks: check top-level cue/start
+            if cue_start is None:
+                cue_start = data.get('cue') or data.get('start')
+            # Get the media URL
+            if 'audio' in data and '@attributes' in data['audio']:
+                url = data['audio']['@attributes'].get('url', '')
+            else:
+                url = ""
+            return url, cue_start
         except json.JSONDecodeError:
             pass
-            
     except Exception as e:
         print(f"Error fetching flashplayer page {popup_url}: {e}")
-        
-    return ""
+    return "", None
 
 def construct_m3u_url(popup_url):
     """Construct M3U URL from popup player URL by extracting show and archive IDs."""
@@ -180,8 +190,8 @@ def scrape_wfmu_playlists():
                 # Remove any trailing dots or spaces
                 title = title.rstrip('. ')
             
-            # Get the direct media URL from the flashplayer page
-            direct_media_url = get_media_url_from_flashplayer(popup_listen_url)
+            # Get the direct media URL and cue start from the flashplayer page
+            direct_media_url, cue_start = get_media_url_from_flashplayer(popup_listen_url)
             
             # Convert RTMP URL to S3 URL
             mp4_listen_url = get_s3_url_from_rtmp(direct_media_url)
@@ -196,6 +206,7 @@ def scrape_wfmu_playlists():
                 "popup_listen_url": popup_listen_url,
                 "direct_media_url": direct_media_url,
                 "mp4_listen_url": mp4_listen_url,
+                "cue_start": cue_start,
                 "raw_text": text
             }
             
