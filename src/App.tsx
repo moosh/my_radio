@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { DragDropContext, Droppable, DropResult } from 'react-beautiful-dnd';
 import { Container, Typography, Box, Button, Dialog, DialogTitle, DialogContent, DialogActions, TextField, ThemeProvider, createTheme } from '@mui/material';
-import { Add as AddIcon } from '@mui/icons-material';
+import { Add as AddIcon, Link as LinkIcon } from '@mui/icons-material';
 import { UrlListItem } from './components/UrlListItem';
 import { parseStationsFile } from './utils/stationParser';
 import { DebugConsole } from './components/DebugConsole';
@@ -85,6 +85,8 @@ function App() {
   const [currentlyPlayingId, setCurrentlyPlayingId] = useState<string | null>(null);
   const [showDebugConsole, setShowDebugConsole] = useState(false);
   const audioRef = useRef<HTMLAudioElement>(null);
+  const [openWfmuDialog, setOpenWfmuDialog] = useState(false);
+  const [wfmuUrl, setWfmuUrl] = useState('');
 
   // Add keyboard shortcut for toggling debug console
   useEffect(() => {
@@ -376,6 +378,14 @@ function App() {
                 Add Station
               </Button>
               <Button
+                variant="contained"
+                color="secondary"
+                startIcon={<LinkIcon />}
+                onClick={() => setOpenWfmuDialog(true)}
+              >
+                Add Playlist
+              </Button>
+              <Button
                 variant="outlined"
                 onClick={() => window.electron?.openMapWindow()}
               >
@@ -474,6 +484,25 @@ function App() {
               <Button onClick={handleSubmit} variant="contained">
                 {editingItem ? 'Save' : 'Add'}
               </Button>
+            </DialogActions>
+          </Dialog>
+
+          <Dialog open={openWfmuDialog} onClose={() => setOpenWfmuDialog(false)}>
+            <DialogTitle>Add WFMU Playlist URL</DialogTitle>
+            <DialogContent>
+              <Box sx={{ pt: 2, display: 'flex', flexDirection: 'column', gap: 2, minWidth: 480 }}>
+                <TextField
+                  label="WFMU Playlist URL"
+                  value={wfmuUrl}
+                  onChange={e => setWfmuUrl(e.target.value)}
+                  fullWidth
+                  placeholder="https://www.wfmu.org/playlists/LM"
+                />
+              </Box>
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={() => setOpenWfmuDialog(false)}>Cancel</Button>
+              <Button onClick={() => setOpenWfmuDialog(false)} variant="contained">OK</Button>
             </DialogActions>
           </Dialog>
 
