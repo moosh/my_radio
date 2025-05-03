@@ -1,0 +1,97 @@
+[
+  {
+    "name": "This Is The Modern World",
+    "shows": [
+      {
+        "date": "May 1, 2025",
+        "title": "'A sigh is weightless, yet it may interrupt the broadcast' - anne carson",
+        "mp4_listen_url": "https://s3.amazonaws.com/arch.wfmu.org/LM/lm250501.mp4",
+        "cue_start": "0:7:38"
+      },
+      {
+        "date": "April 24, 2025",
+        "title": "'in nature nothing exists alone' - rachel carson",
+        "mp4_listen_url": "https://s3.amazonaws.com/arch.wfmu.org/LM/lm250424.mp4",
+        "cue_start": "0:7:32"
+      },
+      {
+        "date": "April 10, 2025",
+        "title": "steal this book",
+        "mp4_listen_url": "https://s3.amazonaws.com/arch.wfmu.org/LM/lm250410.mp4",
+        "cue_start": "0:7:29"
+      },
+      {
+        "date": "April 3, 2025",
+        "title": "it's a stand in",
+        "mp4_listen_url": "https://s3.amazonaws.com/arch.wfmu.org/LM/lm250403.mp4",
+        "cue_start": "0:7:40"
+      },
+      {
+        "date": "March 20, 2025",
+        "title": "\"By giving voice to the cognitive dissonance required to be a woman under the patriarchy, you robbed it of its power.\"- Barbie",
+        "mp4_listen_url": "https://s3.amazonaws.com/arch.wfmu.org/LM/lm250320.mp4",
+        "cue_start": "0:7:12"
+      },
+      {
+        "date": "March 13, 2025",
+        "title": "lovegaze dreamer fundraising week #2 with Therese",
+        "mp4_listen_url": "https://s3.amazonaws.com/arch.wfmu.org/LM/lm250313.mp4",
+        "cue_start": "0:7:32"
+      },
+      {
+        "date": "March 6, 2025",
+        "title": "Sweet Emotion Fundraising Week #1 with Marty McSorley",
+        "mp4_listen_url": "https://s3.amazonaws.com/arch.wfmu.org/LM/lm250306.mp4",
+        "cue_start": "0:8:40"
+      },
+      {
+        "date": "February 27, 2025",
+        "title": "“What kept me sane was knowing that things would change, and it was a question of keeping myself together until they did.\" - Nina Simone",
+        "mp4_listen_url": "https://s3.amazonaws.com/arch.wfmu.org/LM/lm250227.mp4",
+        "cue_start": "0:7:8"
+      },
+      {
+        "date": "February 20, 2025",
+        "title": "breathe in the authority of your human citizenship",
+        "mp4_listen_url": "https://s3.amazonaws.com/arch.wfmu.org/LM/lm250220.mp4",
+        "cue_start": "0:7:17"
+      },
+      {
+        "date": "February 13, 2025",
+        "title": "Black History",
+        "mp4_listen_url": "https://s3.amazonaws.com/arch.wfmu.org/LM/lm250213.mp4",
+        "cue_start": "0:7:3"
+      },
+      {
+        "date": "February 6, 2025",
+        "title": "practice saying NO",
+        "mp4_listen_url": "https://s3.amazonaws.com/arch.wfmu.org/LM/lm250206.mp4",
+        "cue_start": "0:7:14"
+      },
+      {
+        "date": "January 30, 2025",
+        "title": "know your rights",
+        "mp4_listen_url": "https://s3.amazonaws.com/arch.wfmu.org/LM/lm250130.mp4",
+        "cue_start": "0:7:21"
+      },
+      {
+        "date": "January 16, 2025",
+        "title": "sister outsider",
+        "mp4_listen_url": "https://s3.amazonaws.com/arch.wfmu.org/LM/lm250116.mp4",
+        "cue_start": "0:7:22"
+      },
+      {
+        "date": "January 9, 2025",
+        "title": "“The imperialist wears a mask and his face grows to fit it.” - George Orwell",
+        "mp4_listen_url": "https://s3.amazonaws.com/arch.wfmu.org/LM/lm250109.mp4",
+        "cue_start": "0:6:54"
+      },
+      {
+        "date": "January 2, 2025",
+        "title": "art is",
+        "mp4_listen_url": "https://s3.amazonaws.com/arch.wfmu.org/LM/lm250102.mp4",
+        "cue_start": "0:7:18"
+      }
+    ]
+  }
+]

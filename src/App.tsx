@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { DragDropContext, Droppable, DropResult } from 'react-beautiful-dnd';
-import { Container, Typography, Box, Button, Dialog, DialogTitle, DialogContent, DialogActions, TextField, ThemeProvider, createTheme } from '@mui/material';
+import { Container, Typography, Box, Button, Dialog, DialogTitle, DialogContent, DialogActions, TextField, ThemeProvider, createTheme, Tabs, Tab } from '@mui/material';
 import { Add as AddIcon, Link as LinkIcon } from '@mui/icons-material';
 import { UrlListItem } from './components/UrlListItem';
 import { parseStationsFile } from './utils/stationParser';
@@ -95,6 +95,7 @@ function App() {
   const [playlistCards, setPlaylistCards] = useState<{ name: string, shows: PlaylistShowEntry[] }[]>([]);
   const [currentlyPlayingPlaylistUrl, setCurrentlyPlayingPlaylistUrl] = useState<string | null>(null);
   const [currentlyPlayingPlaylistShow, setCurrentlyPlayingPlaylistShow] = useState<PlaylistShowEntry | null>(null);
+  const [tabIndex, setTabIndex] = useState(0);
 
   // Add keyboard shortcut for toggling debug console
   useEffect(() => {
@@ -457,6 +458,38 @@ function App() {
     };
   }, [audioRef]);
 
+  useEffect(() => {
+    const loadPlaylists = async () => {
+      try {
+        let data: string | null = null;
+        // window.electron.getStationsData does not support a filename argument, so only fetch for now
+        addDebugMessage('Trying to fetch /playlists_list.json');
+        try {
+          const response = await fetch('/playlists_list.json');
+          if (response.ok) {
+            data = await response.text();
+          }
+        } catch (e) {
+          addDebugMessage('Fetch for /playlists_list.json failed.');
+        }
+        if (data && data.trim().length > 0) {
+          const parsed = JSON.parse(data);
+          if (Array.isArray(parsed)) {
+            setPlaylistCards(parsed);
+            addDebugMessage(`Loaded ${parsed.length} playlists from playlists_list.json`);
+          } else {
+            addDebugMessage('playlists_list.json is not an array, ignoring.');
+          }
+        } else {
+          addDebugMessage('No playlists_list.json found or file is empty.');
+        }
+      } catch (error) {
+        addDebugMessage(`Error loading playlists_list.json: ${error instanceof Error ? error.message : String(error)}`);
+      }
+    };
+    loadPlaylists();
+  }, []);
+
   return (
     <ThemeProvider theme={darkTheme}>
       <Box sx={{ bgcolor: 'background.default', minHeight: '100vh', py: 4 }}>
@@ -523,37 +556,68 @@ function App() {
             onPlayPause={handlePlayPause}
           />
 
-          <DragDropContext onDragEnd={handleDragEnd}>
-            <Droppable droppableId="stations">
-              {(provided) => (
-                <Box
-                  {...provided.droppableProps}
-                  ref={provided.innerRef}
-                  sx={{ mb: 4 }}
-                >
-                  {items.length === 0 ? (
-                    <Box sx={{ p: 2, textAlign: 'center', color: 'text.secondary' }}>
-                      No stations found.
+          <Tabs value={tabIndex} onChange={(_, v) => setTabIndex(v)} sx={{ mb: 2 }}>
+            <Tab label="Stations" />
+            <Tab label={`Playlists${playlistCards.length > 0 ? ` (${playlistCards.length})` : ''}`} />
+          </Tabs>
+
+          {/* Tab 0: Station List */}
+          <Box role="tabpanel" hidden={tabIndex !== 0}>
+            {tabIndex === 0 && (
+              <DragDropContext onDragEnd={handleDragEnd}>
+                <Droppable droppableId="stations">
+                  {(provided) => (
+                    <Box
+                      {...provided.droppableProps}
+                      ref={provided.innerRef}
+                      sx={{ mb: 4 }}
+                    >
+                      {items.length === 0 ? (
+                        <Box sx={{ p: 2, textAlign: 'center', color: 'text.secondary' }}>
+                          No stations found.
+                        </Box>
+                      ) : (
+                        items.map((item, index) => (
+                          <UrlListItem
+                            key={item.id}
+                            item={item}
+                            index={index}
+                            onDelete={handleDelete}
+                            onEdit={handleOpenDialog}
+                            isPlaying={currentlyPlayingId === item.id}
+                            onPlayPause={handlePlayPause}
+                            onUpdatePlayStats={handleUpdatePlayStats}
+                          />
+                        ))
+                      )}
+                      {provided.placeholder}
                     </Box>
-                  ) : (
-                    items.map((item, index) => (
-                      <UrlListItem
-                        key={item.id}
-                        item={item}
-                        index={index}
-                        onDelete={handleDelete}
-                        onEdit={handleOpenDialog}
-                        isPlaying={currentlyPlayingId === item.id}
-                        onPlayPause={handlePlayPause}
-                        onUpdatePlayStats={handleUpdatePlayStats}
-                      />
-                    ))
                   )}
-                  {provided.placeholder}
+                </Droppable>
+              </DragDropContext>
+            )}
+          </Box>
+
+          {/* Tab 1: Playlist Cards */}
+          <Box role="tabpanel" hidden={tabIndex !== 1}>
+            {tabIndex === 1 && (
+              playlistCards.length === 0 ? (
+                <Box sx={{ p: 2, textAlign: 'center', color: 'text.secondary' }}>
+                  No playlists found.
                 </Box>
-              )}
-            </Droppable>
-          </DragDropContext>
+              ) : (
+                playlistCards.map((playlist, idx) => (
+                  <PlaylistCard
+                    key={playlist.name + idx}
+                    playlistName={playlist.name}
+                    shows={playlist.shows}
+                    onPlay={handlePlayPlaylistShow}
+                    currentlyPlayingUrl={currentlyPlayingPlaylistUrl}
+                  />
+                ))
+              )
+            )}
+          </Box>
 
           <audio ref={audioRef} style={{ display: 'none' }} />
 
@@ -629,17 +693,6 @@ function App() {
           </Dialog>
 
           {showDebugConsole && <DebugConsole messages={debugMessages} />}
-
-          {/* Render PlaylistCards after scraping */}
-          {playlistCards.map((playlist, idx) => (
-            <PlaylistCard
-              key={playlist.name + idx}
-              playlistName={playlist.name}
-              shows={playlist.shows}
-              onPlay={handlePlayPlaylistShow}
-              currentlyPlayingUrl={currentlyPlayingPlaylistUrl}
-            />
-          ))}
         </Container>
       </Box>
     </ThemeProvider>
