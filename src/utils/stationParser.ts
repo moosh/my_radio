@@ -1,4 +1,4 @@
-import { Station, DayPlayStats } from '../types/Station';
+import { Station } from '../types/Station';
 
 interface ParseOptions {
   log?: (message: string) => void;
