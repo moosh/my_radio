@@ -7,10 +7,14 @@ function logProgress(msg) {
 
 function getS3UrlFromRtmp(rtmpUrl) {
   if (!rtmpUrl) return null;
-  const match = rtmpUrl.match(/mp4:LM\/([^"']+)/);
+  // Debug: log the RTMP URL received
+  logProgress(`[getS3UrlFromRtmp] rtmpUrl: ${rtmpUrl}`);
+  const match = rtmpUrl.match(/mp4:([A-Za-z]{2})\/([^"']+)/);
   if (match) {
-    const filename = match[1];
-    return `https://s3.amazonaws.com/arch.wfmu.org/LM/${filename}`;
+    const code = match[1]; // Use the code as found, case preserved
+    const filename = match[2];
+    logProgress(`[getS3UrlFromRtmp] code: ${code}, filename: ${filename}`);
+    return `https://s3.amazonaws.com/arch.wfmu.org/${code}/${filename}`;
   }
   return null;
 }
@@ -133,10 +137,17 @@ async function scrapeWfmuPlaylists(playlistUrl, maxEntries, progressCallback) {
       logProgress(`Processing entry ${i + 1}/${playlistItems.length}: ${entry.title}`);
       const { url, cue_start } = await getMediaUrlAndCue(entry.popup_listen_url);
       entry.direct_media_url = url;
-      entry.mp4_listen_url = getS3UrlFromRtmp(url);
-      entry.cue_start = cue_start;
+      // Debug: log direct_media_url before passing to getS3UrlFromRtmp
       logProgress(`  direct_media_url: ${url}`);
-      logProgress(`  mp4_listen_url: ${entry.mp4_listen_url}`);
+      entry.mp4_listen_url = getS3UrlFromRtmp(url);
+      // Debug: log mp4_listen_url and code
+      if (entry.mp4_listen_url) {
+        const codeMatch = entry.mp4_listen_url.match(/arch\.wfmu\.org\/(\w{2})\//);
+        logProgress(`  mp4_listen_url: ${entry.mp4_listen_url} (code: ${codeMatch ? codeMatch[1] : 'N/A'})`);
+      } else {
+        logProgress(`  mp4_listen_url: null`);
+      }
+      entry.cue_start = cue_start;
       logProgress(`  cue_start: ${cue_start}`);
       if (progressCallback) progressCallback(i + 1, playlistItems.length);
     }
