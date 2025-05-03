@@ -12,8 +12,8 @@ let mapWindow;
 // Helper function to get stations file path
 function getStationsPath() {
   return isDev ? 
-    path.join(__dirname, '../stations.txt') : 
-    path.join(app.getPath('appData'), 'my_radio', 'stations.txt');
+    path.join(__dirname, '../stations_list.json') : 
+    path.join(app.getPath('appData'), 'my_radio', 'stations_list.json');
 }
 
 function createWindow() {

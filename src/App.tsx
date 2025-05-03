@@ -156,33 +156,9 @@ function App() {
   const saveStations = async (stations: Station[]) => {
     try {
       addDebugMessage('Saving stations...');
-      const stationsText = stations.map(station => {
-        const lines = [
-          `title: ${station.title}`,
-          `url: ${station.url}`
-        ];
-        
-        if (station.description) {
-          lines.push(`description: ${station.description}`);
-        }
-        
-        if (station.tags && station.tags.length > 0) {
-          lines.push(`tags: ${station.tags.join(', ')}`);
-        }
-        
-        if (station.playStats && station.playStats.length > 0) {
-          lines.push(`playstats: ${JSON.stringify(station.playStats)}`);
-        }
-        
-        if (station.lastFailedAt) {
-          lines.push(`lastfailedat: ${station.lastFailedAt.toISOString()}`);
-        }
-        
-        return lines.join('\n');
-      }).join('\n\n');
-
+      const stationsJson = JSON.stringify(stations, null, 2);
       if (window.electron) {
-        const success = await window.electron.saveStationsData(stationsText);
+        const success = await window.electron.saveStationsData(stationsJson, 'stations_list.json');
         if (success) {
           addDebugMessage('Successfully saved stations');
         } else {

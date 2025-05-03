@@ -26,3 +26,4 @@ dist-ssr
 /release
 /stations.txt
 /venv
+/stations_list.json
