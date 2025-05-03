@@ -531,18 +531,24 @@ function App() {
                   ref={provided.innerRef}
                   sx={{ mb: 4 }}
                 >
-                  {items.map((item, index) => (
-                    <UrlListItem
-                      key={item.id}
-                      item={item}
-                      index={index}
-                      onDelete={handleDelete}
-                      onEdit={handleOpenDialog}
-                      isPlaying={currentlyPlayingId === item.id}
-                      onPlayPause={handlePlayPause}
-                      onUpdatePlayStats={handleUpdatePlayStats}
-                    />
-                  ))}
+                  {items.length === 0 ? (
+                    <Box sx={{ p: 2, textAlign: 'center', color: 'text.secondary' }}>
+                      No stations found.
+                    </Box>
+                  ) : (
+                    items.map((item, index) => (
+                      <UrlListItem
+                        key={item.id}
+                        item={item}
+                        index={index}
+                        onDelete={handleDelete}
+                        onEdit={handleOpenDialog}
+                        isPlaying={currentlyPlayingId === item.id}
+                        onPlayPause={handlePlayPause}
+                        onUpdatePlayStats={handleUpdatePlayStats}
+                      />
+                    ))
+                  )}
                   {provided.placeholder}
                 </Box>
               )}
